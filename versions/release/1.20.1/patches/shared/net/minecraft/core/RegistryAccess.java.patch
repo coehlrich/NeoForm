@@ -11,6 +11,15 @@
           }
  
           @Override
+@@ -72,7 +72,7 @@
+ 
+       public ImmutableRegistryAccess(List<? extends Registry<?>> p_248540_) {
+          this.f_206223_ = p_248540_.stream()
+-            .collect(Collectors.toUnmodifiableMap(Registry::m_123023_, (Function<? super Registry, ? extends Registry>)(p_206232_ -> p_206232_)));
++            .collect(Collectors.toUnmodifiableMap(Registry::m_123023_, (p_206232_ -> p_206232_)));
+       }
+ 
+       public ImmutableRegistryAccess(Map<? extends ResourceKey<? extends Registry<?>>, ? extends Registry<?>> p_206225_) {
 @@ -85,7 +85,7 @@
  
        @Override

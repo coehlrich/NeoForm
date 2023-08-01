@@ -60,3 +60,12 @@
                 .m_178330_(ServerboundHelloPacket.class, ServerboundHelloPacket::new)
                 .m_178330_(ServerboundKeyPacket.class, ServerboundKeyPacket::new)
                 .m_178330_(ServerboundCustomQueryPacket.class, ServerboundCustomQueryPacket::new)
+@@ -539,7 +539,7 @@
+       }
+ 
+       public void m_264538_(Consumer<Class<? extends Packet<?>>> p_265213_) {
+-         this.f_129604_.keySet().stream().filter(p_264721_ -> p_264721_ != BundleDelimiterPacket.class).forEach(p_265213_);
++         this.f_129604_.keySet().stream().filter(p_264721_ -> p_264721_ != (Object)BundleDelimiterPacket.class).forEach(p_265213_);
+          this.f_263747_.forEach(p_265213_);
+       }
+ 

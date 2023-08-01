@@ -33,7 +33,7 @@
        ResourceLocation resourcelocation = p_259230_.m_135782_();
        f_256751_.put(resourcelocation, () -> p_259210_.m_257957_(p_260327_));
 -      f_256935_.m_255290_(p_259230_, p_260327_, p_259258_);
-+      f_256935_.m_255290_((ResourceKey<WritableRegistry<?>>)p_259230_, p_260327_, p_259258_);
++      f_256935_.m_255290_((ResourceKey)p_259230_, p_260327_, p_259258_);
        return p_260327_;
     }
  
