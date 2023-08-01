@@ -1,11 +1,62 @@
 --- a/net/minecraft/network/ConnectionProtocol.java
 +++ b/net/minecraft/network/ConnectionProtocol.java
-@@ -334,7 +334,7 @@
+@@ -196,14 +196,14 @@
  
-       public void m_264538_(Consumer<Class<? extends Packet<?>>> p_265213_) {
-          this.f_129604_.keySet().stream().filter((p_264721_) -> {
--            return p_264721_ != BundleDelimiterPacket.class;
-+            return p_264721_ != (Object)BundleDelimiterPacket.class;
-          }).forEach(p_265213_);
-          this.f_263747_.forEach(p_265213_);
-       }
+ public enum ConnectionProtocol implements BundlerInfo.Provider {
+    HANDSHAKING(
+-      -1, m_129600_().m_129625_(PacketFlow.SERVERBOUND, new ConnectionProtocol.PacketSet().m_178330_(ClientIntentionPacket.class, ClientIntentionPacket::new))
++      -1, m_129600_().m_129625_(PacketFlow.SERVERBOUND, new ConnectionProtocol.PacketSet<net.minecraft.network.protocol.handshake.ServerHandshakePacketListener>().m_178330_(ClientIntentionPacket.class, ClientIntentionPacket::new))
+    ),
+    PLAY(
+       0,
+       m_129600_()
+          .m_129625_(
+             PacketFlow.CLIENTBOUND,
+-            new ConnectionProtocol.PacketSet()
++            new ConnectionProtocol.PacketSet<net.minecraft.network.protocol.game.ClientGamePacketListener>()
+                .m_264543_(ClientboundBundlePacket.class, ClientboundBundlePacket::new)
+                .m_178330_(ClientboundAddEntityPacket.class, ClientboundAddEntityPacket::new)
+                .m_178330_(ClientboundAddExperienceOrbPacket.class, ClientboundAddExperienceOrbPacket::new)
+@@ -318,7 +318,7 @@
+          )
+          .m_129625_(
+             PacketFlow.SERVERBOUND,
+-            new ConnectionProtocol.PacketSet()
++            new ConnectionProtocol.PacketSet<net.minecraft.network.protocol.game.ServerGamePacketListener>()
+                .m_178330_(ServerboundAcceptTeleportationPacket.class, ServerboundAcceptTeleportationPacket::new)
+                .m_178330_(ServerboundBlockEntityTagQuery.class, ServerboundBlockEntityTagQuery::new)
+                .m_178330_(ServerboundChangeDifficultyPacket.class, ServerboundChangeDifficultyPacket::new)
+@@ -377,13 +377,13 @@
+       m_129600_()
+          .m_129625_(
+             PacketFlow.SERVERBOUND,
+-            new ConnectionProtocol.PacketSet()
++            new ConnectionProtocol.PacketSet<net.minecraft.network.protocol.status.ServerStatusPacketListener>()
+                .m_178330_(ServerboundStatusRequestPacket.class, ServerboundStatusRequestPacket::new)
+                .m_178330_(ServerboundPingRequestPacket.class, ServerboundPingRequestPacket::new)
+          )
+          .m_129625_(
+             PacketFlow.CLIENTBOUND,
+-            new ConnectionProtocol.PacketSet()
++            new ConnectionProtocol.PacketSet<net.minecraft.network.protocol.status.ClientStatusPacketListener>()
+                .m_178330_(ClientboundStatusResponsePacket.class, ClientboundStatusResponsePacket::new)
+                .m_178330_(ClientboundPongResponsePacket.class, ClientboundPongResponsePacket::new)
+          )
+@@ -393,7 +393,7 @@
+       m_129600_()
+          .m_129625_(
+             PacketFlow.CLIENTBOUND,
+-            new ConnectionProtocol.PacketSet()
++            new ConnectionProtocol.PacketSet<net.minecraft.network.protocol.login.ClientLoginPacketListener>()
+                .m_178330_(ClientboundLoginDisconnectPacket.class, ClientboundLoginDisconnectPacket::new)
+                .m_178330_(ClientboundHelloPacket.class, ClientboundHelloPacket::new)
+                .m_178330_(ClientboundGameProfilePacket.class, ClientboundGameProfilePacket::new)
+@@ -402,7 +402,7 @@
+          )
+          .m_129625_(
+             PacketFlow.SERVERBOUND,
+-            new ConnectionProtocol.PacketSet()
++            new ConnectionProtocol.PacketSet<net.minecraft.network.protocol.login.ServerLoginPacketListener>()
+                .m_178330_(ServerboundHelloPacket.class, ServerboundHelloPacket::new)
+                .m_178330_(ServerboundKeyPacket.class, ServerboundKeyPacket::new)
+                .m_178330_(ServerboundCustomQueryPacket.class, ServerboundCustomQueryPacket::new)
