@@ -1,0 +1,20 @@
+--- a/net/minecraft/commands/arguments/blocks/BlockPredicateArgument.java
++++ b/net/minecraft/commands/arguments/blocks/BlockPredicateArgument.java
+@@ -83,7 +83,7 @@
+             return false;
+          } else {
+             for (Property<?> property : this.f_115592_) {
+-               if (blockstate.m_61143_((Property<boolean>)property) != this.f_115591_.m_61143_((Property<boolean>)property)) {
++               if (blockstate.m_61143_(property) != this.f_115591_.m_61143_(property)) {
+                   return false;
+                }
+             }
+@@ -135,7 +135,7 @@
+                   return false;
+                }
+ 
+-               if (blockstate.m_61143_((Property<boolean>)property) != comparable) {
++               if (blockstate.m_61143_(property) != comparable) {
+                   return false;
+                }
+             }

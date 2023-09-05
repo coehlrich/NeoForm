@@ -1,0 +1,58 @@
+--- a/net/minecraft/world/level/dimension/DimensionType.java
++++ b/net/minecraft/world/level/dimension/DimensionType.java
+@@ -72,49 +72,17 @@
+    public static final float[] f_63844_ = new float[]{1.0F, 0.75F, 0.5F, 0.25F, 0.0F, 0.25F, 0.5F, 0.75F};
+    public static final Codec<Holder<DimensionType>> f_63853_ = RegistryFileCodec.m_135589_(Registries.f_256787_, f_63843_);
+ 
+-   public DimensionType(
+-      OptionalLong f_63854_,
+-      boolean f_223549_,
+-      boolean f_63856_,
+-      boolean f_63857_,
+-      boolean f_63858_,
+-      double f_63859_,
+-      boolean f_63863_,
+-      boolean f_156647_,
+-      int f_156648_,
+-      int f_63865_,
+-      int f_63836_,
+-      TagKey<Block> f_63837_,
+-      ResourceLocation f_63838_,
+-      float f_223550_,
+-      DimensionType.MonsterSettings f_223550_
+-   ) {
+-      if (f_63865_ < 16) {
++   public DimensionType {
++      if (f_156648_ < 16) {
+          throw new IllegalStateException("height has to be at least 16");
+-      } else if (f_156648_ + f_63865_ > f_156652_ + 1) {
++      } else if (f_156647_ + f_156648_ > f_156652_ + 1) {
+          throw new IllegalStateException("min_y + height cannot be higher than: " + (f_156652_ + 1));
+-      } else if (f_63836_ > f_63865_) {
++      } else if (f_63865_ > f_156648_) {
+          throw new IllegalStateException("logical_height cannot be higher than height");
+-      } else if (f_63865_ % 16 != 0) {
+-         throw new IllegalStateException("height has to be multiple of 16");
+       } else if (f_156648_ % 16 != 0) {
++         throw new IllegalStateException("height has to be multiple of 16");
++      } else if (f_156647_ % 16 != 0) {
+          throw new IllegalStateException("min_y has to be a multiple of 16");
+-      } else {
+-         this.f_63854_ = f_63854_;
+-         this.f_223549_ = f_223549_;
+-         this.f_63856_ = f_63856_;
+-         this.f_63857_ = f_63857_;
+-         this.f_63858_ = f_63858_;
+-         this.f_63859_ = f_63859_;
+-         this.f_63862_ = f_63863_;
+-         this.f_63863_ = f_156647_;
+-         this.f_156647_ = f_156648_;
+-         this.f_156648_ = f_63865_;
+-         this.f_63865_ = f_63836_;
+-         this.f_63836_ = f_63837_;
+-         this.f_63837_ = f_63838_;
+-         this.f_63838_ = f_223550_;
+-         this.f_223550_ = f_223550_;
+       }
+    }
+ 

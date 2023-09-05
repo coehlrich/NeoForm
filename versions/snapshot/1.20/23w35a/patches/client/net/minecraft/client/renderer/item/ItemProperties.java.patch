@@ -1,0 +1,13 @@
+--- a/net/minecraft/client/renderer/item/ItemProperties.java
++++ b/net/minecraft/client/renderer/item/ItemProperties.java
+@@ -130,8 +130,8 @@
+             if (entity == null) {
+                return 0.0F;
+             } else {
+-               if (p_174666_x == null && entity.m_9236_() instanceof ClientLevel p_174666_x) {
+-                  ;
++               if (p_174666_x == null && entity.m_9236_() instanceof ClientLevel) {
++                  p_174666_x = (ClientLevel)entity.m_9236_();
+                }
+ 
+                if (p_174666_x == null) {

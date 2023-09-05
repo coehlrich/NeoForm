@@ -2,7 +2,7 @@
 +++ b/net/minecraft/commands/Commands.java
 @@ -325,7 +325,7 @@
     ) {
-       for(CommandNode<CommandSourceStack> commandnode : p_82113_.getChildren()) {
+       for (CommandNode<CommandSourceStack> commandnode : p_82113_.getChildren()) {
           if (commandnode.canUse(p_82115_)) {
 -            ArgumentBuilder<SharedSuggestionProvider, ?> argumentbuilder = commandnode.createBuilder();
 +            ArgumentBuilder<SharedSuggestionProvider, ?> argumentbuilder = (ArgumentBuilder<SharedSuggestionProvider, ?>)(ArgumentBuilder<?, ?>)commandnode.createBuilder();

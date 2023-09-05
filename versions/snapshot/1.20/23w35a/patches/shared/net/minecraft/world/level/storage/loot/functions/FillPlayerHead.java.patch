@@ -1,0 +1,15 @@
+--- a/net/minecraft/world/level/storage/loot/functions/FillPlayerHead.java
++++ b/net/minecraft/world/level/storage/loot/functions/FillPlayerHead.java
+@@ -42,9 +42,9 @@
+    @Override
+    public ItemStack m_7372_(ItemStack p_80608_, LootContext p_80609_) {
+       if (p_80608_.m_150930_(Items.f_42680_)) {
+-         GameProfile gameprofile = p_80609_.m_78953_(this.f_80602_.m_79003_());
+-         if (gameprofile instanceof Player player) {
+-            gameprofile = player.m_36316_();
++         net.minecraft.world.entity.Entity entity = p_80609_.m_78953_(this.f_80602_.m_79003_());
++         if (entity instanceof Player player) {
++            GameProfile gameprofile = player.m_36316_();
+             p_80608_.m_41784_().m_128365_("SkullOwner", NbtUtils.m_129230_(new CompoundTag(), gameprofile));
+          }
+       }

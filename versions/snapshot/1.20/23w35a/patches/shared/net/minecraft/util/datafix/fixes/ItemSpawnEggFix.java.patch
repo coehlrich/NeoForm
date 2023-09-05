@@ -1,0 +1,13 @@
+--- a/net/minecraft/util/datafix/fixes/ItemSpawnEggFix.java
++++ b/net/minecraft/util/datafix/fixes/ItemSpawnEggFix.java
+@@ -117,8 +117,9 @@
+                   Typed<?> typed1 = p_16044_.getOrCreateTyped(opticfinder2);
+                   Typed<?> typed2 = typed1.getOrCreateTyped(opticfinder3);
+                   Typed<?> typed3 = typed2.getOrCreateTyped(opticfinder4);
++                  Dynamic<?> dynamic_f = dynamic;
+                   Typed<?> typed4 = (Typed)typed3.write()
+-                     .flatMap(p_145411_ -> type1.readTyped(p_145411_.set("id", dynamic.createString(s))))
++                     .flatMap(p_145411_ -> type1.readTyped(p_145411_.set("id", dynamic_f.createString(s))))
+                      .result()
+                      .orElseThrow(() -> new IllegalStateException("Could not parse new entity"))
+                      .getFirst();
