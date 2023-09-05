@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
 +++ b/net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
-@@ -841,9 +841,11 @@
+@@ -841,8 +841,11 @@
     }
  
     public void m_31124_(EndCrystal p_31125_, BlockPos p_31126_, DamageSource p_31127_) {
@@ -8,8 +8,8 @@
 +      Player player;
 +      if (!(p_31127_.m_7639_() instanceof Player)) {
           player = this.m_9236_().m_45941_(f_31088_, (double)p_31126_.m_123341_(), (double)p_31126_.m_123342_(), (double)p_31126_.m_123343_());
++      } else {
++         player = (Player)p_31127_.m_7639_();
        }
-+      player = (Player)p_31127_.m_7639_();
  
        if (p_31125_ == this.f_31086_) {
-          this.m_31120_(this.f_31080_, this.m_269291_().m_269036_(p_31125_, player), 10.0F);
