@@ -5,7 +5,7 @@
                 WorldTemplatePaginatedList worldtemplatepaginatedlist = p_89654_;
     
 -               Either<WorldTemplatePaginatedList, Exception> either;
--               for(RealmsClient realmsclient = RealmsClient.m_87169_();
+-               for (RealmsClient realmsclient = RealmsClient.m_87169_();
 -                  worldtemplatepaginatedlist != null;
 +               RealmsClient realmsclient = RealmsClient.m_87169_();
 +               while(worldtemplatepaginatedlist != null) {

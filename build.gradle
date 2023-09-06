@@ -149,7 +149,9 @@ subprojects {
 
     dependencies {
         srgutilsJar "net.minecraftforge:srgutils:${SRGUTILS_VERSION}"
-        fernflower FERNFLOWER.version
+        if (FERNFLOWER.version) {
+        		fernflower FERNFLOWER.version
+        }
         mergetool(MERGETOOL.version) {
         		transitive = false
         }

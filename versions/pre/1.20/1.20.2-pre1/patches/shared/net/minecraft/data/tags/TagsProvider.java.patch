@@ -9,21 +9,15 @@
        return this.m_274574_()
           .thenApply(p_275895_ -> {
              this.f_275754_.complete(null);
-@@ -108,8 +110,6 @@
+@@ -108,11 +110,8 @@
              }
           );
  
 -      record CombinedData<T>(HolderLookup.Provider f_273893_, TagsProvider.TagLookup<T> f_273819_) {
--      }
- 
-    }
- 
-@@ -178,7 +178,7 @@
        }
  
-       default boolean m_274455_(TagKey<T> p_275413_) {
--         return this.apply((T)p_275413_).isPresent();
-+         return this.apply(p_275413_).isPresent();
-       }
-    }
- }
+-   }
+-
+    protected TagsProvider.TagAppender<T> m_206424_(TagKey<T> p_206425_) {
+       TagBuilder tagbuilder = this.m_236451_(p_206425_);
+       return new TagsProvider.TagAppender<>(tagbuilder);
