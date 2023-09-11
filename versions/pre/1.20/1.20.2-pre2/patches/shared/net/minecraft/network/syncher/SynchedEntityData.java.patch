@@ -1,0 +1,11 @@
+--- a/net/minecraft/network/syncher/SynchedEntityData.java
++++ b/net/minecraft/network/syncher/SynchedEntityData.java
+@@ -284,7 +284,7 @@
+          if (entitydataserializer == null) {
+             throw new DecoderException("Unknown serializer type " + i);
+          } else {
+-            return m_252951_(p_254314_, p_254356_, (EntityDataSerializer<T>)entitydataserializer);
++            return m_252951_(p_254314_, p_254356_, entitydataserializer);
+          }
+       }
+ 

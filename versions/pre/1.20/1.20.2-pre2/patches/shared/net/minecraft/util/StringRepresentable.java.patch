@@ -1,0 +1,11 @@
+--- a/net/minecraft/util/StringRepresentable.java
++++ b/net/minecraft/util/StringRepresentable.java
+@@ -27,7 +27,7 @@
+       E[] ae = (E[])p_275615_.get();
+       if (ae.length > 16) {
+          Map<String, E> map = Arrays.stream(ae)
+-            .collect(Collectors.toMap(p_274905_ -> p_275259_.apply(((StringRepresentable)p_274905_).m_7912_()), p_274903_ -> (Enum)p_274903_));
++            .collect(Collectors.toMap(p_274905_ -> p_275259_.apply(((StringRepresentable)p_274905_).m_7912_()), p_274903_ -> p_274903_));
+          return new StringRepresentable.EnumCodec<>(ae, p_216438_ -> p_216438_ == null ? null : map.get(p_216438_));
+       } else {
+          return new StringRepresentable.EnumCodec<>(ae, p_274908_ -> {

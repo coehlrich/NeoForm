@@ -1,0 +1,11 @@
+--- a/net/minecraft/core/RegistryAccess.java
++++ b/net/minecraft/core/RegistryAccess.java
+@@ -100,7 +100,7 @@
+       }
+ 
+       private static <T> RegistryAccess.RegistryEntry<T> m_206243_(ResourceKey<? extends Registry<?>> p_206244_, Registry<?> p_206245_) {
+-         return new RegistryAccess.RegistryEntry<>(p_206244_, (Registry<T>)p_206245_);
++         return new RegistryAccess.RegistryEntry<T>((ResourceKey<? extends Registry<T>>)p_206244_, (Registry<T>)p_206245_);
+       }
+ 
+       private RegistryAccess.RegistryEntry<T> m_206247_() {

@@ -1,0 +1,20 @@
+--- a/net/minecraft/network/ConnectionProtocol.java
++++ b/net/minecraft/network/ConnectionProtocol.java
+@@ -441,7 +441,7 @@
+       m_129600_()
+          .m_129625_(
+             PacketFlow.CLIENTBOUND,
+-            new ConnectionProtocol.PacketSet<ClientCommonPacketListener>()
++            new ConnectionProtocol.PacketSet<net.minecraft.network.protocol.configuration.ClientConfigurationPacketListener>()
+                .m_178330_(ClientboundCustomPayloadPacket.class, ClientboundCustomPayloadPacket::new)
+                .m_178330_(ClientboundDisconnectPacket.class, ClientboundDisconnectPacket::new)
+                .m_178330_(ClientboundFinishConfigurationPacket.class, ClientboundFinishConfigurationPacket::new)
+@@ -454,7 +454,7 @@
+          )
+          .m_129625_(
+             PacketFlow.SERVERBOUND,
+-            new ConnectionProtocol.PacketSet<ServerCommonPacketListener>()
++            new ConnectionProtocol.PacketSet<net.minecraft.network.protocol.configuration.ServerConfigurationPacketListener>()
+                .m_178330_(ServerboundClientInformationPacket.class, ServerboundClientInformationPacket::new)
+                .m_178330_(ServerboundCustomPayloadPacket.class, ServerboundCustomPayloadPacket::new)
+                .m_178330_(ServerboundFinishConfigurationPacket.class, ServerboundFinishConfigurationPacket::new)
