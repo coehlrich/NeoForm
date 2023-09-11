@@ -9,12 +9,3 @@
     }
  
     HolderSet.Named<T> m_203561_(TagKey<T> p_206045_);
-@@ -181,7 +181,7 @@
- 
-          @Override
-          public Iterator<Holder<T>> iterator() {
--            return Registry.this.m_203611_().map(p_260061_ -> p_260061_).iterator();
-+            return Registry.this.m_203611_().map(p_260061_ -> (Holder<T>)p_260061_).iterator();
-          }
-       };
-    }

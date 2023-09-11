@@ -9,3 +9,12 @@
           : DataResult.error(() -> "Not a map: " + p_129070_);
     }
  
+@@ -238,7 +238,7 @@
+             : DataResult.success(listtag::forEach);
+       } else {
+          return p_129110_ instanceof CollectionTag<?> collectiontag
+-            ? DataResult.success(collectiontag::forEach)
++            ? DataResult.success((Consumer<Consumer<Tag>>)collectiontag::forEach)
+             : DataResult.error(() -> "Not a list: " + p_129110_);
+       }
+    }
