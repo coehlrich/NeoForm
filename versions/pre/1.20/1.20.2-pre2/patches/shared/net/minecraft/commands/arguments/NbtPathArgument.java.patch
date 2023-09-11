@@ -1,0 +1,20 @@
+--- a/net/minecraft/commands/arguments/NbtPathArgument.java
++++ b/net/minecraft/commands/arguments/NbtPathArgument.java
+@@ -309,7 +309,7 @@
+             int i = collectiontag.size();
+             int j = this.f_99547_ < 0 ? i + this.f_99547_ : this.f_99547_;
+             if (0 <= j && j < i) {
+-               p_99555_.add(collectiontag.get(j));
++               p_99555_.add((Tag)collectiontag.get(j));
+             }
+          }
+       }
+@@ -330,7 +330,7 @@
+             int i = collectiontag.size();
+             int j = this.f_99547_ < 0 ? i + this.f_99547_ : this.f_99547_;
+             if (0 <= j && j < i) {
+-               Tag tag = collectiontag.get(j);
++               Tag tag = (Tag)collectiontag.get(j);
+                Tag tag1 = p_99558_.get();
+                if (!tag1.equals(tag) && collectiontag.m_7615_(j, tag1)) {
+                   return 1;

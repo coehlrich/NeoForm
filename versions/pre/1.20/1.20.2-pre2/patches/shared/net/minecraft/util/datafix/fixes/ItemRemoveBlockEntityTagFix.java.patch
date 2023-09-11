@@ -4,8 +4,8 @@
                       return p_242866_;
                    }
  
--                  return p_242866_.set(opticfinder1, ((Pair)optional4.get()).getFirst());
-+                  return p_242866_.<Object, Object>set((OpticFinder<Object>)opticfinder1, (Typed<Object>)((Pair)optional4.get()).getFirst());
+-                  return p_242866_.set(opticfinder1, optional4.get().getFirst());
++                  return p_242866_.set((OpticFinder<Typed<?>>)opticfinder1, optional4.get().getFirst());
                 }
              }
           }
