@@ -274,7 +274,7 @@ jobs:
         AUTORENAMINGTOOL_VERSION: ${{ steps.lib-versions.outputs.forgeautorenamingtool }}
         CONFIG: versions/${{ inputs.new_version }}/config.json
     - name: Update installertools
-      if: ${{ vars.INSTALLERTOOLS_UPDATE == 'true' }
+      if: ${{ vars.INSTALLERTOOLS_UPDATE == 'true' }}
       run: sed -i -E "s/net.minecraftforge:installertools:[0-9]+(\.[0-9]+)*/net.minecraftforge:installertools:$INSTALLERTOOLS_VERSION/g" $CONFIG
       env:
         INSTALLERTOOLS_VERSION: ${{ steps.lib-versions.outputs.installertools }}
