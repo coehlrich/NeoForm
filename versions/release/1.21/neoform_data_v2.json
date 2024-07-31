@@ -463,7 +463,7 @@
                         "patches": [
                             {
                                 "type": "data",
-                                "data": "patches_client"
+                                "data": "patches_server"
                             },
                             {
                                 "type": "data",
