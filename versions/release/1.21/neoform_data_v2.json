@@ -1,0 +1,665 @@
+{
+    "spec": 5,
+    "version": "1.21",
+    "official": true,
+    "java_target": 21,
+    "encoding": "UTF-8",
+    "data": {
+        "mappings": "joined.tsrg",
+        "inject": "inject/",
+        "patches_client": "patches/client/",
+        "patches_joined": "patches/joined/",
+        "patches_server": "patches/server/",
+        "patches_shared": "patches/shared/"
+    },
+    "steps": {
+        "shared": {
+            "merged_mappings": {
+                "function": "mergeMappings",
+                "inputs": {
+                    "mappings": {
+                        "type": "data",
+                        "data": "mappings"
+                    },
+                    "official": {
+                        "type": "step_output",
+                        "step": "mojang_mappings",
+                        "name": "output"
+                    }
+                },
+                "outputs": {
+                    "output": {
+                        "name": "merged_mappings",
+                        "type": "tsrg"
+                    }
+                }
+            },
+            "stripped_jar": {
+                "function": "strip",
+                "inputs": {
+                    "input": {
+                        "type": "step_output",
+                        "step": "mojang_jar",
+                        "name": "output"
+                    },
+                    "mappings": {
+                        "type": "data",
+                        "data": "mappings"
+                    }
+                },
+                "outputs": {
+                    "slim": {
+                        "name": "slim",
+                        "type": "jar"
+                    },
+                    "extra": {
+                        "name": "extra",
+                        "type": "jar"
+                    }
+                }
+            },
+            "libraries_list": {
+                "function": "listLibraries",
+                "inputs": {
+                    "format": "-e={library}",
+                    "use_json_libraries": true,
+                    "extra": [],
+                    "json": {
+                        "type": "version_json"
+                    }
+                },
+                "outputs": {
+                    "output": {
+                        "name": "libraries",
+                        "type": "txt"
+                    }
+                }
+            },
+            "renamed_jar": {
+                "function": "rename",
+                "inputs": {
+                    "input": {
+                        "type": "step_output",
+                        "step": "stripped_jar",
+                        "name": "slim"
+                    },
+                    "libraries": {
+                        "type": "step_output",
+                        "step": "libraries_list",
+                        "name": "output"
+                    },
+                    "mappings": {
+                        "type": "step_output",
+                        "step": "merged_mappings",
+                        "name": "output"
+                    }
+                },
+                "outputs": {
+                    "output": {
+                        "name": "renamed",
+                        "type": "jar"
+                    }
+                }
+            },
+            "decompiled_jar": {
+                "function": "decompile",
+                "inputs": {
+                    "libraries": {
+                        "type": "step_output",
+                        "step": "libraries_list",
+                        "name": "output"
+                    },
+                    "input": {
+                        "type": "step_output",
+                        "step": "renamed_jar",
+                        "name": "output"
+                    }
+                },
+                "outputs": {
+                    "output": {
+                        "name": "decompiled",
+                        "type": "jar"
+                    }
+                }
+            },
+            "injected_jar": {
+                "function": "inject",
+                "inputs": {
+                    "input": {
+                        "type": "step_output",
+                        "step": "decompiled_jar",
+                        "name": "output"
+                    },
+                    "inject": {
+                        "type": "data",
+                        "data": "inject"
+                    }
+                },
+                "outputs": {
+                    "output": {
+                        "name": "injected",
+                        "type": "jar"
+                    }
+                }
+            }
+        },
+        "overrides": {
+            "client": {
+                "mojang_jar": {
+                    "function": "downloadData",
+                    "inputs": {
+                        "json": {
+                            "type": "version_json"
+                        },
+                        "name": "client"
+                    },
+                    "outputs": {
+                        "output": {
+                            "name": "client",
+                            "type": "jar"
+                        }
+                    }
+                },
+                "mojang_mappings": {
+                    "function": "downloadData",
+                    "inputs": {
+                        "json": {
+                            "type": "version_json"
+                        },
+                        "name": "client_mappings"
+                    },
+                    "outputs": {
+                        "output": {
+                            "name": "client_mappings",
+                            "type": "txt"
+                        }
+                    }
+                },
+                "patched_jar": {
+                    "function": "patch",
+                    "inputs": {
+                        "input": {
+                            "type": "step_output",
+                            "step": "injected_jar",
+                            "name": "output"
+                        },
+                        "patches": [
+                            {
+                                "type": "data",
+                                "data": "patches_client"
+                            },
+                            {
+                                "type": "data",
+                                "data": "patches_shared"
+                            }
+                        ]
+                    },
+                    "outputs": {
+                        "output": {
+                            "name": "patched",
+                            "type": "jar"
+                        }
+                    }
+                }
+            },
+            "joined": {
+                "client_jar": {
+                    "function": "downloadData",
+                    "inputs": {
+                        "json": {
+                            "type": "version_json"
+                        },
+                        "name": "client"
+                    },
+                    "outputs": {
+                        "output": {
+                            "name": "client",
+                            "type": "jar"
+                        }
+                    }
+                },
+                "server_jar": {
+                    "function": "downloadData",
+                    "inputs": {
+                        "json": {
+                            "type": "version_json"
+                        },
+                        "name": "server"
+                    },
+                    "outputs": {
+                        "output": {
+                            "name": "server",
+                            "type": "jar"
+                        }
+                    }
+                },
+                "extracted_server_jar": {
+                    "function": "bundleExtractJar",
+                    "inputs": {
+                        "input": {
+                            "type": "step_output",
+                            "step": "server_jar",
+                            "name": "output"
+                        }
+                    },
+                    "outputs": {
+                        "output": {
+                            "name": "extracted_server",
+                            "type": "jar"
+                        }
+                    }
+                },
+                "mojang_mappings": {
+                    "function": "downloadData",
+                    "inputs": {
+                        "json": {
+                            "type": "version_json"
+                        },
+                        "name": "client_mappings"
+                    },
+                    "outputs": {
+                        "output": {
+                            "name": "client_mappings",
+                            "type": "txt"
+                        }
+                    }
+                },
+                "stripped_jar": {
+                    "function": "strip",
+                    "inputs": {
+                        "input": {
+                            "type": "step_output",
+                            "step": "client_jar",
+                            "name": "output"
+                        },
+                        "mappings": {
+                            "type": "data",
+                            "data": "mappings"
+                        }
+                    },
+                    "outputs": {
+                        "slim": {
+                            "name": "client_stripped",
+                            "type": "jar"
+                        },
+                        "extra": {
+                            "name": "client_extra",
+                            "type": "jar"
+                        }
+                    }
+                },
+                "stripped_server": {
+                    "function": "strip",
+                    "inputs": {
+                        "input": {
+                            "type": "step_output",
+                            "step": "extracted_server_jar",
+                            "name": "output"
+                        },
+                        "mappings": {
+                            "type": "data",
+                            "data": "mappings"
+                        }
+                    },
+                    "outputs": {
+                        "slim": {
+                            "name": "server_stripped",
+                            "type": "jar"
+                        },
+                        "extra": {
+                            "name": "server_extra",
+                            "type": "jar"
+                        }
+                    }
+                },
+                "merged_jar": {
+                    "function": "merge",
+                    "inputs": {
+                        "client": {
+                            "type": "step_output",
+                            "step": "stripped_jar",
+                            "name": "slim"
+                        },
+                        "server": {
+                            "type": "step_output",
+                            "step": "stripped_server",
+                            "name": "slim"
+                        },
+                        "version": {
+                            "type": "minecraft_version"
+                        }
+                    },
+                    "outputs": {
+                        "output": {
+                            "name": "merged",
+                            "type": "jar"
+                        }
+                    }
+                },
+                "renamed_jar": {
+                    "function": "rename",
+                    "inputs": {
+                        "input": {
+                            "type": "step_output",
+                            "step": "merged_jar",
+                            "name": "output"
+                        },
+                        "libraries": {
+                            "type": "step_output",
+                            "step": "libraries_list",
+                            "name": "output"
+                        },
+                        "mappings": {
+                            "type": "step_output",
+                            "step": "merged_mappings",
+                            "name": "output"
+                        }
+                    },
+                    "outputs": {
+                        "output": {
+                            "name": "renamed",
+                            "type": "jar"
+                        }
+                    }
+                },
+                "patched_jar": {
+                    "function": "patch",
+                    "inputs": {
+                        "input": {
+                            "type": "step_output",
+                            "step": "injected_jar",
+                            "name": "output"
+                        },
+                        "patches": [
+                            {
+                                "type": "data",
+                                "data": "patches_joined"
+                            },
+                            {
+                                "type": "data",
+                                "data": "patches_shared"
+                            }
+                        ]
+                    },
+                    "outputs": {
+                        "output": {
+                            "name": "patched",
+                            "type": "jar"
+                        }
+                    }
+                }
+            },
+            "server": {
+                "bundle_jar": {
+                    "function": "downloadData",
+                    "inputs": {
+                        "json": {
+                            "type": "version_json"
+                        },
+                        "name": "server"
+                    },
+                    "outputs": {
+                        "output": {
+                            "name": "server_bundle",
+                            "type": "jar"
+                        }
+                    }
+                },
+                "mojang_jar": {
+                    "function": "bundleExtractJar",
+                    "inputs": {
+                        "input": {
+                            "type": "step_output",
+                            "step": "bundle_jar",
+                            "name": "output"
+                        }
+                    },
+                    "outputs": {
+                        "output": {
+                            "name": "extracted_server",
+                            "type": "jar"
+                        }
+                    }
+                },
+                "mojang_mappings": {
+                    "function": "downloadData",
+                    "inputs": {
+                        "json": {
+                            "type": "version_json"
+                        },
+                        "name": "server_mappings"
+                    },
+                    "outputs": {
+                        "output": {
+                            "name": "server_mappings",
+                            "type": "txt"
+                        }
+                    }
+                },
+                "mojang_libraries": {
+                    "function": "bundleExtractLibs",
+                    "inputs": {
+                        "input": {
+                            "type": "step_output",
+                            "step": "bundle_jar",
+                            "name": "output"
+                        }
+                    },
+                    "outputs": {
+                        "output": {
+                            "name": "server_libraries",
+                            "type": "folder"
+                        }
+                    }
+                },
+                "patched_jar": {
+                    "function": "patch",
+                    "inputs": {
+                        "input": {
+                            "type": "step_output",
+                            "step": "injected_jar",
+                            "name": "output"
+                        },
+                        "patches": [
+                            {
+                                "type": "data",
+                                "data": "patches_client"
+                            },
+                            {
+                                "type": "data",
+                                "data": "patches_shared"
+                            }
+                        ]
+                    },
+                    "outputs": {
+                        "output": {
+                            "name": "patched",
+                            "type": "jar"
+                        }
+                    }
+                },
+                "libraries_list": {
+                    "function": "listLibraries",
+                    "inputs": {
+                        "format": "-e={library}",
+                        "use_json_libraries": false,
+                        "extra": [
+                            {
+                                "type": "step_output",
+                                "step": "mojang_libraries",
+                                "name": "output"
+                            }
+                        ],
+                        "json": {
+                            "type": "version_json"
+                        }
+                    },
+                    "outputs": {
+                        "output": {
+                            "name": "libraries",
+                            "type": "txt"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "output": {
+        "compiled": {
+            "step": "renamed_jar",
+            "name": "output"
+        },
+        "resources": {
+            "step": "stripped_jar",
+            "name": "extra"
+        },
+        "unpatched": {
+            "step": "decompiled_jar",
+            "name": "output"
+        },
+        "patched": {
+            "step": "patched_jar",
+            "name": "output"
+        }
+    },
+    "functions": {
+        "decompile": {
+            "version": "org.vineflower:vineflower:1.10.1",
+            "args": [
+                "--decompile-inner",
+                "--remove-bridge",
+                "--decompile-generics",
+                "--ascii-strings",
+                "--remove-synthetic",
+                "--include-classpath",
+                "--variable-renaming=jad",
+                "--ignore-invalid-bytecode",
+                "--bytecode-source-mapping",
+                "--dump-code-lines",
+                "--indent-string=    ",
+                "--log-level=TRACE",
+                "-cfg",
+                "{libraries}",
+                "{input}",
+                "{output}"
+            ],
+            "jvmargs": [
+                "-Xmx4G"
+            ],
+            "repo": null,
+            "java_version": 21
+        },
+        "merge": {
+            "version": "net.neoforged:mergetool:2.0.3:fatjar",
+            "args": [
+                "--client",
+                "{client}",
+                "--server",
+                "{server}",
+                "--ann",
+                "{version}",
+                "--output",
+                "{output}",
+                "--inject",
+                "false"
+            ],
+            "jvmargs": [
+                
+            ],
+            "repo": null
+        },
+        "rename": {
+            "version": "net.neoforged:AutoRenamingTool:2.0.3:all",
+            "args": [
+                "--input",
+                "{input}",
+                "--output",
+                "{output}",
+                "--map",
+                "{mappings}",
+                "--cfg",
+                "{libraries}",
+                "--ann-fix",
+                "--ids-fix",
+                "--src-fix",
+                "--record-fix",
+                "--unfinal-params"
+            ],
+            "jvmargs": [
+                
+            ],
+            "repo": null
+        },
+        "mergeMappings": {
+            "version": "net.neoforged.installertools:installertools:2.1.7:fatjar",
+            "args": [
+                "--task",
+                "MERGE_MAPPING",
+                "--left",
+                "{mappings}",
+                "--right",
+                "{official}",
+                "--right-names",
+                "right,left",
+                "--classes",
+                "--fields",
+                "--methods",
+                "--output",
+                "{output}"
+            ],
+            "jvmargs": [
+                
+            ],
+            "repo": null
+        },
+        "bundleExtractJar": {
+            "version": "net.neoforged.installertools:installertools:2.1.7:fatjar",
+            "args": [
+                "--task",
+                "bundler_extract",
+                "--input",
+                "{input}",
+                "--output",
+                "{output}",
+                "--jar-only"
+            ],
+            "jvmargs": [
+                
+            ],
+            "repo": null
+        },
+        "bundleExtractLibs": {
+            "version": "net.neoforged.installertools:installertools:2.1.7:fatjar",
+            "args": [
+                "--task",
+                "bundler_extract",
+                "--input",
+                "{input}",
+                "--output",
+                "{output}",
+                "--libraries"
+            ],
+            "jvmargs": [
+                
+            ],
+            "repo": null
+        }
+    },
+    "libraries": {
+        "client": [
+            "com.google.code.findbugs:jsr305:3.0.2",
+            "ca.weblite:java-objc-bridge:1.1",
+            "org.jetbrains:annotations:24.1.0"
+        ],
+        "server": [
+            "com.google.code.findbugs:jsr305:3.0.2",
+            "org.jetbrains:annotations:24.1.0"
+        ],
+        "joined": [
+            "com.google.code.findbugs:jsr305:3.0.2",
+            "ca.weblite:java-objc-bridge:1.1",
+            "net.neoforged:mergetool:2.0.3:api",
+            "org.jetbrains:annotations:24.1.0"
+        ]
+    }
+}

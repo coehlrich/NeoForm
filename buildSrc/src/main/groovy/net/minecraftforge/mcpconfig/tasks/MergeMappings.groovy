@@ -1,4 +1,4 @@
-package net.minecraftforge.mcpconfig.tasks;
+/*package net.minecraftforge.mcpconfig.tasks;
 
 import org.gradle.api.*
 import org.gradle.api.file.*
@@ -21,4 +21,4 @@ abstract class MergeMappings extends ToolJarExec {
             'output': dest.get().getAsFile().absolutePath
         ]))
     }
-}
+}*/

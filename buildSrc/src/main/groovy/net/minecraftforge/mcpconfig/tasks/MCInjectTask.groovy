@@ -1,4 +1,4 @@
-package net.minecraftforge.mcpconfig.tasks
+/*package net.minecraftforge.mcpconfig.tasks
 
 import org.gradle.api.file.*
 import org.gradle.api.tasks.*
@@ -23,4 +23,4 @@ public abstract class MCInjectTask extends ToolJarExec {
             'output': dest.get().getAsFile()
         ]))
     }
-}
+}*/

@@ -3,6 +3,7 @@ plugins {
 }
 
 import net.minecraftforge.mcpconfig.tasks.*
+import net.neoforged.neoform.tasks.*
 import net.neoforged.srgutils.MinecraftVersion
 
 import javax.inject.Inject
@@ -92,10 +93,13 @@ subprojects {
         PATH_INJECT_TEMPLATE = new File(PATH_INJECT, 'package-info-template.java')
         PATH_NATIVES = file('projects/natives')
 
-        CONFIG = file('config.json').json
+        DATA = file('neoform_data_v2.json').json
+        JAVA_TARGET = DATA.java_target
+        ENCODING = DATA.encoding
+        TOOLS = DATA.functions
+        /*CONFIG = file('config.json').json
         MERGE_PATCHES = !rootProject.hasProperty('updating') && CONFIG.get('merge_patches', false)
-        JAVA_TARGET = CONFIG.get('java_target', 8)
-        ENCODING = CONFIG.get('encoding', 'UTF-8')
+        
         FERNFLOWER = Utils.readConfig(CONFIG, 'fernflower', [:])        
         MERGETOOL = Utils.readConfig(CONFIG, 'merge', [
             version: 'net.minecraftforge:mergetool:1.1.3:fatjar',
@@ -119,26 +123,17 @@ subprojects {
         if (CONFIG.containsKey('bundler_extract_libs'))
             BUNDLE_EXTRACT_LIBS = Utils.readConfig(CONFIG, 'bundler_extract_libs', [:])
         TOOLS = [FERNFLOWER, MERGETOOL, RENAMETOOL, MERGEMAPTOOL, MCINJECTOR, BUNDLE_EXTRACT_JAR, BUNDLE_EXTRACT_LIBS].findAll {it?.version != null}
+        */
     }
 
     java.toolchain.languageVersion = JavaLanguageVersion.of(JAVA_TARGET)
 
     configurations {
-        srgutilsJar
-        fernflower
-        mergetool
-        renametool
-        mergemaptool
-        if (MCINJECTOR) {
-            mcinjector
-        }
-        if (BUNDLE_EXTRACT_JAR) {
-            bundleExtractJar
-        }
-        if (BUNDLE_EXTRACT_LIBS) {
-            bundleExtractLibs
+        for (tool in TOOLS.keySet()) {
+            create('tool_' + tool)
         }
     }
+    println configurations
 
     repositories {
         maven {
@@ -152,7 +147,7 @@ subprojects {
                 includeModule('net.neoforged', 'minecraft-dependencies')
             }
         }
-        for (tool in TOOLS) {
+        for (tool in TOOLS.values()) {
             if (tool.repo) {
                 maven {
                     name tool.name
@@ -163,31 +158,8 @@ subprojects {
     }
 
     dependencies {
-        srgutilsJar "net.neoforged:srgutils:${SRGUTILS_VERSION}"
-        if (FERNFLOWER.version) {
-            fernflower FERNFLOWER.version
-        }
-        mergetool(MERGETOOL.version) {
-            transitive = false
-        }
-        renametool(RENAMETOOL.version) {
-            transitive = false
-        }
-        mergemaptool(MERGEMAPTOOL.version) {
-            transitive = false
-        }
-        if (MCINJECTOR) {
-            mcinjector(MCINJECTOR.version) {
-                transitive = false
-            }
-        }
-        if (BUNDLE_EXTRACT_JAR) {
-            bundleExtractJar(BUNDLE_EXTRACT_JAR.version) {
-                transitive = false
-            }
-        }
-        if (BUNDLE_EXTRACT_LIBS) {
-            bundleExtractLibs(BUNDLE_EXTRACT_LIBS.version) {
+        for (tool in TOOLS.entrySet()) {
+            add('tool_' + tool.key, tool.value.version) {
                 transitive = false
             }
         }
@@ -206,166 +178,14 @@ subprojects {
         onlyIfModified true
         quiet true
     }
-    ['client', 'server', 'client_mappings', 'server_mappings'].each { id ->
-        def name = 'download' + id.replace('_m', 'M').capitalize()
-        task "${name}"(type: Download, dependsOn: downloadJson) {
-            def json = downloadJson.dest
-            inputs.file json
-            src { json.json.downloads.get(id).url }
-            dest file(PATH_CACHED_VERSION + id + (id.contains('_') ? '.txt' : '.jar'))
-            useETag 'all'
-            onlyIfModified true
-            quiet true
-        }
-    }
     
-    task downloadLibraries(type: DownloadLibraries, dependsOn: downloadJson) {
-        json = downloadJson.dest
-        config = CONFIG
-        dest = new File(gradle.gradleUserHomeDir, '/caches/neoform/libraries/')
-    }
-    task downloadAssets(type: DownloadAssets, dependsOn: downloadJson) {
-        json = downloadJson.dest
-        dest = new File(gradle.gradleUserHomeDir, '/caches/neoform/assets/')
-    }
-
-    task createAssetsData(type: CreateAssetsDataJson, dependsOn: downloadAssets) {
-        assets = downloadAssets.dest
-        json = downloadJson.dest
-
-        dest = file(PATH_CACHED_VERSION + 'assets.json')
-    }
-
-    task createAssetsDataJar(type: Jar, dependsOn: downloadAssets) {
-        from createAssetsData.dest
-        destinationDirectory = file(PATH_CACHED_VERSION)
-        archiveFileName = 'assets.json.jar'
-    }
-
-    if (MCINJECTOR != null) {
-        task makeEmptyFile(type: SingleFileOutput) {
-            dest = file(PATH_BUILD + '/empty.txt')
-            doLast {
-                dest.get().getAsFile().text = ''
-            }
-        }
-    }
+    def stepManager = objects.newInstance(NeoFormStepManager.class)
+    // Use output object instead of directly referencing steps
+    println stepManager.getStep('client', 'decompiled_jar')
+    println stepManager.getStep('joined', 'decompiled_jar')
+    println stepManager.getStep('server', 'decompiled_jar')
     
-    if (BUNDLE_EXTRACT_JAR != null) {
-        task extractServer(type: ExtractBundleJar, dependsOn: [downloadServer]) {
-            config BUNDLE_EXTRACT_JAR, configurations.bundleExtractJar
-            input = downloadServer.dest
-            dest = file(PATH_CACHED_VERSION + 'server.extracted.jar')
-        }
-        task extractServerLibraries(type: ExtractBundleLibs, dependsOn: [downloadServer]) {
-            config BUNDLE_EXTRACT_LIBS, configurations.bundleExtractLibs
-            input = downloadServer.dest
-            dest = file(PATH_CACHED_VERSION + 'server_libraries')
-        }
-    }
-    
-    task filterClient(type: SplitJar, dependsOn: [downloadClient]) {
-        mappings = file('joined.tsrg')
-        source = downloadClient.dest
-        slim = file(PATH_CACHED_VERSION + 'client.slim.jar')
-        extra = file(PATH_CACHED_VERSION + 'client.extra.jar')
-    }
-    
-    task filterServer(type: SplitJar, dependsOn: BUNDLE_EXTRACT_JAR == null ? [downloadServer] : [extractServer]) {
-        mappings = file('joined.tsrg')
-        source = BUNDLE_EXTRACT_JAR == null ? downloadServer.dest : extractServer.dest
-        slim = file(PATH_CACHED_VERSION + 'server.slim.jar')
-        extra = file(PATH_CACHED_VERSION + 'server.extra.jar')
-    }
-
-    task mergeJars(type: MergeJar, dependsOn: [filterClient, filterServer]) {
-        config MERGETOOL, configurations.mergetool
-        mainClass = 'net.neoforged.mergetool.ConsoleMerger'
-        client = filterClient.slim
-        server = filterServer.slim
-        version = project.version
-        dest = file(PATH_CACHED_VERSION + 'joined.jar')
-    }
-
-    task makeObfToIntermediate(type: CONFIG.mergemap ? MergeMappings : RenameMappings, dependsOn: [downloadClientMappings]) {
-        if (CONFIG.mergemap) {
-            config MERGEMAPTOOL, configurations.mergemaptool
-            mappings = file('joined.tsrg')
-        }
-        else
-            intermediate = file('joined.tsrg')
-        if (CONFIG.official)
-            official = downloadClientMappings.dest
-        dest = file(PATH_CACHED_VERSION + 'obf_to_intermediate.tsrg')
-    }
-
-    def sides = [
-        client: [Name: 'Client', jsonlibs: true,  extra: 'Client', assets: true,  slim: filterClient, extra: filterClient, bundle: null],
-        server: [Name: 'Server', jsonlibs: false, extra: 'Server', assets: false, slim: filterServer, extra: filterServer, bundle: downloadServer],
-        joined: [Name: 'Joined', jsonlibs: true,  extra: 'Client', assets: true,  slim: mergeJars,    extra: filterClient, bundle: null]
-    ]
-    
-    sides.each{ s, child ->
-        child.libraries = task "fernflowerLibraries${child.Name}"(type: CreateFernflowerLibraries, dependsOn: [downloadLibraries, downloadJson, child.slim] + (BUNDLE_EXTRACT_LIBS == null ? [] : [extractServerLibraries])) {
-            meta = downloadJson.dest
-            config = CONFIG
-            side = s
-            root = downloadLibraries.dest
-            if ('server'.equals(s)) {
-                extras.from(files(filterServer.extra))
-                if (BUNDLE_EXTRACT_LIBS != null) {
-                    extras.from(extractServerLibraries.dest.map { Files.walk(it.getAsFile().toPath()).filter { Files.isRegularFile(it) }.collect(Collectors.toList()) } )
-                }
-            }
-            dest = file(PATH_CACHED_VERSION + s + '.fernflower.libs.txt')
-        }
-        
-        child.rename = task "rename${child.Name}"(type: RemapJar, dependsOn: [child.slim, makeObfToIntermediate, child.libraries]) {
-            config RENAMETOOL, configurations.renametool
-            input = 'joined'.equals(s) ? child.slim.dest : child.slim.slim
-            mappings = makeObfToIntermediate.dest
-            libraries = child.libraries.dest
-            dest = file(PATH_CACHED_VERSION + s + '.mapped.jar')
-            log = file(PATH_CACHED_VERSION + s + '.mapped.log')
-        }
-        
-        if (MCINJECTOR != null) {
-            child.mcinject = task "mcinject${child.Name}"(type: MCInjectTask, dependsOn: [child.rename, makeEmptyFile/*, makeExceptions, fixAccessLevels*/]) {
-                config MCINJECTOR, configurations.mcinjector
-                access = makeEmptyFile.dest //fixAccessLevels.dest
-                constructors = project.file('constructors.txt')
-                exceptions = makeEmptyFile.dest //makeExceptions.dest
-                doFirst {
-                    standardOutput = JarExec.NULL_OUTPUT
-                }
-                log = file(PATH_CACHED_VERSION + s + '.mci.log')
-                input = child.rename.dest
-                dest = file(PATH_CACHED_VERSION + s + '.mci.jar')
-            }
-        }
-    }
-    task renameJars(dependsOn: [renameClient, renameServer, renameJoined]){}
-
-    task extractInheritance(type: ExtractInheritance, dependsOn: [downloadLibraries, mergeJars]) {
-        input = mergeJars.dest
-        inputs.file downloadJson.dest
-        dest = file(PATH_CACHED_VERSION_DATA + 'inheritance.json')
-        libraries.from(providers.provider { downloadJson.dest }.zip(downloadLibraries.dest, {downloadJson, libraries -> downloadJson.json.libraries.stream().map{ it?.downloads?.artifact?.path }.findAll{ it != null }.collect{ new File(libraries.getAsFile(), it) } }))
-    }
-    task extractInheritanceNamed(type: ExtractInheritance, dependsOn: [renameJoined]) {
-        input = renameJoined.dest
-        inputs.file downloadJson.dest
-        dest = file(PATH_CACHED_VERSION_DATA + 'inheritance_named.json')
-        libraries.from(providers.provider { downloadJson.dest }.zip(downloadLibraries.dest, {downloadJson, libraries -> downloadJson.json.libraries.stream().map{ it?.downloads?.artifact?.path }.findAll{ it != null }.collect{ new File(libraries.getAsFile(), it) } }))
-    }
-
-    task dumpOverrides(type: DumpOverrides, dependsOn: [extractInheritance, makeObfToIntermediate]) {
-        srg = makeObfToIntermediate.dest
-        meta = extractInheritance.dest
-        dest = file(PATH_CACHED_VERSION_DATA + 'overrides.txt')
-    }
-    
-    task projectRoot(type: Copy) {
+    /*task projectRoot(type: Copy) {
         from rootProject.file('templates/root_settings.gradle')
         into file('projects/')
         rename { 'settings.gradle' }
@@ -388,11 +208,11 @@ subprojects {
     task testDecompile
     task testCompile
     //task testApi
-    task testJdks(dependsOn:[testDecompile, testCompile/*, testApi*/])
+    task testJdks(dependsOn:[testDecompile, testCompile/*, testApi*//*])
     
     sides.each{ side, child ->
         // Normal workflow tasks
-        child.decompile = task "decompile${child.Name}"(type: FernflowerTask, dependsOn: [/*verify,*/ child.rename, child.libraries] + (MCINJECTOR == null ? [] : [child.mcinject])) {
+        child.decompile = task "decompile${child.Name}"(type: FernflowerTask, dependsOn: [/*verify,*//* child.rename, child.libraries] + (MCINJECTOR == null ? [] : [child.mcinject])) {
             config FERNFLOWER, configurations.fernflower
             classpath = configurations.fernflower
             libraries = child.libraries.dest
@@ -454,7 +274,7 @@ subprojects {
         projectDeleteAll.dependsOn(child.delete)
         
         child.project = task "project${child.Name}"(type: CreateProjectTemplate, dependsOn: [projectRoot, child.extra, child.decompile, child.pkgs] +
-                (child.jsonlibs ? [downloadJson, extractNatives] : []) +
+                (child.jsonlibs ? [downloadJson] : []) +
                 (child.assets ? [createAssetsDataJar] : []) +
                 (child.bundle != null ? [child.bundle] : [])
         ) {
@@ -474,7 +294,6 @@ subprojects {
             replace '{java_target}', JAVA_TARGET + ''
             replaceFile '{inject}', PATH_INJECT
             replaceFile '{assets}', child.assets ? downloadAssets.dest : null
-            replaceFile '{natives}', child.jsonlibs ? extractNatives.dest : null
             replaceFile '{merged_src}', MERGE_PATCHES ? project.file('projects/shared') : null
         }
         projectAll.dependsOn(child.project)
@@ -524,7 +343,7 @@ subprojects {
         /*
         def testApiSide = task("testApi${child.Name}")
         testApi.dependsOn(testApiSide)
-        */
+        *//*
         
         def jdks = [
             [name: 'hotspot8',   Name: 'HotSpot8',   version: 8,  official: false],
@@ -600,7 +419,7 @@ subprojects {
                 dest new File(testPath, 'api_errors.json')
             }
             testApiSide.dependsOn(tstApi)
-            */
+            *//*
         }
     }
 
@@ -779,30 +598,18 @@ subprojects {
         }
     }
 
-    task makeZip(type: Zip, dependsOn: [generateConfiguration]) {
+    */task makeZip(type: Zip, dependsOn: [/*generateConfiguration*/]) {
         archiveBaseName = rootProject.name
         archiveVersion = project.version
         destinationDirectory = file(PATH_BUILD + '/distributions')
 
-        from generateConfiguration
+        /*from generateConfiguration*/
         from(file('joined.tsrg')){ into 'config/' }
 
         def patches = file('patches')
         if (patches.exists()) {
-            def shared = file('patches/shared')
-            if (MERGE_PATCHES && shared.exists()) {
-                for (def side : ['client', 'server', 'joined']) {
-                    from(file('patches/' + side)) {
-                        into 'patches/' + side
-                    }
-                    from(shared) {
-                        into 'patches/' + side
-                    }
-                }
-            } else {                
-                from(patches) {
-                    into 'patches/'
-                }
+            from(patches) {
+                into 'patches/'
             }
         }
 
@@ -862,11 +669,11 @@ subprojects {
     }
 
     TOOLS.each {
-        dependencies.add('neoformData', it.version) { transitive = false }
+        dependencies.add('neoformData', it.value.version) { transitive = false }
     }
 
     ['server', 'client', 'joined'].each {
-        CONFIG?.libraries?.get(it)?.each { dependencies.add('neoformApiElements', it) { transitive = false } }
+        DATA?.libraries?.get(it)?.each { dependencies.add('neoformApiElements', it) { transitive = false } }
     }
 
     dependencies {
