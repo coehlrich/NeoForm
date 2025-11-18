@@ -10,7 +10,10 @@ abstract class ToolJarExec extends JavaExec {
     def config(def cfg, def configuration) {
         classpath = configuration
         args = cfg.args
-        jvmArgs = cfg.jvmargs
+
+        if (cfg.jvmargs != null) {
+            jvmArgs = cfg.jvmargs
+        }
 
         if (cfg.java_version != null) {
             javaLauncher.set(javaToolchainService.launcherFor {
@@ -23,7 +26,7 @@ abstract class ToolJarExec extends JavaExec {
     }
 
     ToolJarExec() {
-        def javaTarget = project.ext.JAVA_TARGET
+        def javaTarget = project.rootProject.ext.JAVA_TARGET
         if (javaTarget != null) {
             javaLauncher.convention(javaToolchainService.launcherFor {
                 it.languageVersion = JavaLanguageVersion.of(javaTarget)

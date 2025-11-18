@@ -10,19 +10,36 @@ import java.nio.file.Files
 import java.util.function.BiFunction
 import java.util.stream.Collectors
 
+apply plugin: 'java'
+apply plugin: 'de.undercouch.download'
+apply plugin: 'maven-publish'
+
 group = 'net.neoforged'
+version = name
 
 net.minecraftforge.mcpconfig.tasks.Utils.init()
 
 ext {
-    MC_1_16_5 = MinecraftVersion.from('1.16.5')
-    VERSIONS = subprojects.collect{it.name}.sort{ a,b -> MinecraftVersion.from(a).compareTo(MinecraftVersion.from(b)) } as List
-    NULL_OUTPUT = new OutputStream() { public void write(int b){} }
+    CONFIG = file('config.json').json
+    MC_VERSION = CONFIG.version
+
     TIMESTAMP = (new Date()).format('yyyyMMdd.HHmmss')
     PATH_BUILD = file('build').absolutePath
+    PATH_CACHED_VERSION = PATH_BUILD + '/version/'
 
     ASM_VERSION = '9.7'
     SRGUTILS_VERSION = '1.0.10'
+    
+    PATH_INJECT = file('inject')
+    PATH_NATIVES = file('projects/natives')
+
+    JAVA_TARGET = CONFIG.get('java_target', 8)
+    ENCODING = CONFIG.get('encoding', 'UTF-8')
+    FERNFLOWER = CONFIG.fernflower
+    MERGETOOL = CONFIG.merge
+    BUNDLE_EXTRACT_JAR = CONFIG.bundler_extract_jar
+    BUNDLE_EXTRACT_LIBS = CONFIG.bundler_extract_libs
+    TOOLS = [FERNFLOWER, MERGETOOL, BUNDLE_EXTRACT_JAR, BUNDLE_EXTRACT_LIBS]
 }
 
 logger.lifecycle('Timestamp: ' + TIMESTAMP)
@@ -33,53 +50,6 @@ task downloadVersionManifest(type: Download) {
     useETag 'all'
     onlyIfModified true
     quiet true
-}
-
-/* This check is fucked on anything > J8 because modules use a propriatary file format. We'd have to create an extracter 
- * that runs in the external process.. so fuck it.
- 
-task downloadRuntimeManifest(type: Download) {
-    src 'https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json'
-    dest file('build/versions/java-runtime-all.json')
-    useETag 'all'
-    onlyIfModified true
-    quiet true
-}
-
-task downloadRuntime(type:DownloadRuntime, dependsOn: downloadRuntimeManifest) {
-    json = downloadRuntimeManifest.dest
-    os = 'windows-x64'
-    doFirst {
-        downloadRuntimeManifest.dest.json.get('windows-x64').keySet().each{ dest.put(it, file('build/runtimes/' + it)) }
-    }
-}
-
-task extractRuntimeApi(type: ExtractAPI, dependsOn: downloadRuntime) {
-    doFirst {
-        downloadRuntimeManifest.dest.json.get('windows-x64').keySet().each {
-            roots.put(it, new File(downloadRuntime.dest.get(it), 'files'))
-            apis.put(it, new File(downloadRuntime.dest.get(it), 'api.json'))
-        }
-    }
-}
-*/
-
-if (project.hasProperty('old_version') && project.hasProperty('new_version')) {
-    println('Update Old: ' + project.getProperty('old_version') + ' New: ' + project.getProperty('new_version'))
-    apply from: 'update.gradle'
-}
-
-subprojects {
-    ext {
-        CONFIG = file('config.json').json
-    }
-    
-    def configVersion = CONFIG.get('version', 1)
-    if (configVersion == 1) {
-        apply from: rootProject.file('config_versions/setup_version_1.gradle')
-    } else if (configVersion == 2) {
-        apply from: rootProject.file('setup_latest.gradle')
-    }
 }
 
 if (System.getenv("GITHUB_ENV")) {
@@ -94,27 +64,682 @@ if (System.getenv("GITHUB_ENV")) {
     }
 }
 
-def getVersionIndex(prop, default_) {
-    if (!project.hasProperty(prop))
-        return default_
-    if (!VERSIONS.contains(project.getProperty(prop)))
-        throw new IllegalArgumentException('Unknown version in ' + prop + ': ' + project.getProperty(prop) + ' Known: ' + VERSIONS.toString())
-    return VERSIONS.indexOf(project.getProperty(prop))
+abstract class ComponentMaker {
+    @Inject
+    abstract SoftwareComponentFactory getComponentFactory()
 }
 
-def template = project(':' + VERSIONS[0])
-def start = getVersionIndex('startVersion', 0)
-def end = getVersionIndex('endVersion', VERSIONS.size - 1)
+java.toolchain.languageVersion = JavaLanguageVersion.of(JAVA_TARGET)
 
-if (start > end)
-    throw new IllegalArgumentException('Invalid start and end range: ' + VERSIONS[start] + ' > ' + VERSIONS[end])
-
-template.tasks.each{t ->
-    def myTask = project.tasks.findByName(t.name) ?: project.tasks.create(t.name)
-    for (int x = start; x <= end; x++) {
-        def task = project(VERSIONS[x]).tasks.findByName(t.name)
-        if (task != null)
-            myTask.dependsOn task
+configurations {
+    nfrt {
+        canBeResolved = true
+        canBeConsumed = false
+        transitive = false
     }
 }
+
+allprojects {
+    repositories {
+        mavenLocal()
+        maven {
+            name = 'mojang meta'
+            url = 'https://maven.neoforged.net/mojang-meta/'
+            content {
+                includeModule('net.neoforged', 'minecraft-dependencies')
+            }
+        }
+        maven {
+            name = 'minecraft'
+            url = 'https://libraries.minecraft.net'
+        }
+        maven {
+            name = 'forge'
+            url = 'https://maven.neoforged.net/releases'
+        }
+        for (tool in TOOLS) {
+            if (tool.repo) {
+                maven {
+                    name = tool.name
+                    url = tool.repo
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    nfrt "net.neoforged:neoform-runtime:1.0.4:all"
+}
+
+def versionJson = file(PATH_CACHED_VERSION + 'version.json')
+def versionJsonTask
+if (MC_VERSION.zip) {
+    task downloadZip(type: Download) {
+        src MC_VERSION.zip
+        dest file(PATH_CACHED_VERSION + 'version.zip')
+        useETag 'all'
+        onlyIfModified true
+        quiet true
+    }
+    versionJsonTask = task extractJson(dependsOn: downloadZip) {
+        def zip = zipTree(downloadZip.dest)
+        inputs.files zip
+        outputs.file versionJson
+        doLast {
+            def path = versionJson.toPath()
+            Files.deleteIfExists(path)
+            Files.copy(zip.singleFile.toPath(), path)
+        }
+    }
+} else {
+    versionJsonTask = task downloadJson(type: Download, dependsOn: rootProject.downloadVersionManifest) {
+        def manifest = rootProject.downloadVersionManifest.dest
+        inputs.file manifest
+        def id = MC_VERSION.name
+        src { 
+            Utils.init()
+            manifest.json.versions.find{ it.id == id }.url
+        }
+        dest versionJson
+        useETag 'all'
+        onlyIfModified true
+        quiet true
+    }
+}
+['client', 'server'].each { id ->
+    def name = 'download' + id.replace('_m', 'M').capitalize()
+    task "${name}"(type: Download, dependsOn: versionJsonTask) {
+        def json = versionJson
+        inputs.file json
+        src { json.json.downloads.get(id).url }
+        dest file(PATH_CACHED_VERSION + id + (id.contains('_') ? '.txt' : '.jar'))
+        useETag 'all'
+        onlyIfModified true
+        quiet true
+    }
+}
+
+task downloadAssets(type: DownloadAssets) {
+    assetJson = file(PATH_CACHED_VERSION + 'assets.json')
+    nfrt = configurations.nfrt
+    minecraftVersion = version
+}
+
+task createAssetsDataJar(type: Jar, dependsOn: downloadAssets) {
+    from downloadAssets.assetJson
+    destinationDirectory = file(PATH_CACHED_VERSION)
+    archiveFileName = 'assets.json.jar'
+}
+
+task deduplicateSources(type: DeduplicateJars) {
+    duplicates = file(PATH_CACHED_VERSION + 'source.duplicates.jar')
+}
+
+task applySharedPatches(type: ApplyPatches, dependsOn: [deduplicateSources]) {
+    baseZip = deduplicateSources.duplicates
+    output = project.file('projects/shared')
+    patches = project.file('patches/shared')
+}
+task makeSharedPatches(type: MakePatches, dependsOn: [deduplicateSources]) {
+    mustRunAfter applySharedPatches
+    baseZip = deduplicateSources.duplicates
+    modified = project.file('projects/shared')
+    patches = project.file('patches/shared')
+}
+
+def distribution = Attribute.of("net.neoforged.distribution", String)
+def operatingsystem = Attribute.of("net.neoforged.operatingsystem", String)
+
+abstract class DistributionDisambiguationRule implements AttributeDisambiguationRule<String> {
+    private final String value
+
+    @Inject
+    DistributionDisambiguationRule(String value) {
+        this.value = value
+    }
+
+    @Override
+    void execute(MultipleCandidatesDetails<String> details) {
+        details.closestMatch(value)  
+    }
+}
+
+abstract class OperatingSystemDisambiguationRule implements AttributeDisambiguationRule<String> {
+    private final String value
+
+    @Inject
+    OperatingSystemDisambiguationRule(String value) {
+        this.value = value
+    }
+
+    @Override
+    void execute(MultipleCandidatesDetails<String> details) {
+        details.closestMatch(value)  
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+
+    ext {
+        PATH_CACHED_VERSION_SIDE = PATH_CACHED_VERSION + project.name + '/'
+    }
+    
+    configurations {
+        // srgutils
+        srgutilsJar
+
+        // Tools
+        fernflower
+        mergetool
+        bundleExtractJar
+        bundleExtractLibs
+        
+        // Libraries
+        minecraftLibraries
+        neoformLibraries
+        libraries {
+            extendsFrom minecraftLibraries
+            extendsFrom neoformLibraries
+        }
+    }
+
+    dependencies {
+        attributesSchema {
+            attribute(distribution) {
+                disambiguationRules.add(DistributionDisambiguationRule) {
+                    params(project.name == 'joined' ? 'client' : project.name)
+                }
+            }
+            attribute(operatingsystem) {
+                disambiguationRules.add(OperatingSystemDisambiguationRule) {
+                    params("linux")
+                }
+            }
+        }
+        def tool = { configuration, config ->
+            if (config.classpath) {
+                for (def version : config.classpath) {
+                    add(configuration, version, {
+                      transitive = false
+                    })
+                }
+            } else {
+                add(configuration, config.version, {
+                    transitive = false
+                })
+            }
+        }
+        srgutilsJar "net.neoforged:srgutils:${SRGUTILS_VERSION}"
+        tool("fernflower", FERNFLOWER)
+        tool("mergetool", MERGETOOL)
+        tool("bundleExtractJar", BUNDLE_EXTRACT_JAR)
+        tool("bundleExtractLibs", BUNDLE_EXTRACT_LIBS)
+        minecraftLibraries("net.neoforged:minecraft-dependencies:" + MC_VERSION.base_version)
+        for (def library : CONFIG.libraries[project.name]) {
+            neoformLibraries(library) {
+                transitive = false
+            }
+        }
+    }
+    
+    if (project.name == 'server') {
+        task extract(type: ExtractBundleJar, dependsOn: [downloadServer]) {
+            config BUNDLE_EXTRACT_JAR, configurations.bundleExtractJar
+            input = downloadServer.dest
+            dest = file(PATH_CACHED_VERSION_SIDE + 'extracted.jar')
+        }
+        task extractLibraries(type: ExtractBundleLibs, dependsOn: [downloadServer]) {
+            config BUNDLE_EXTRACT_LIBS, configurations.bundleExtractLibs
+            input = downloadServer.dest
+            dest = file(PATH_CACHED_VERSION_SIDE + 'libraries')
+        }
+    } else if (project.name == 'joined') {
+        task mergeJars(type: MergeJar, dependsOn: [downloadClient, downloadServer]) {
+            config MERGETOOL, configurations.mergetool
+            client = downloadClient.dest
+            server = downloadServer.dest
+            dest = file(PATH_CACHED_VERSION + 'joined.jar')
+        }
+    }
+
+    task filter(type: SplitJar) {
+        if (project.name == 'client') {
+            source = downloadClient.dest
+            dependsOn downloadClient
+        } else if (project.name == 'joined') {
+            source = mergeJars.dest
+        } else if (project.name == 'server') {
+            source = extract.dest
+        }
+        slim = file(PATH_CACHED_VERSION_SIDE + 'slim.jar')
+        extra = file(PATH_CACHED_VERSION_SIDE + 'extra.jar')
+    }
+    
+    task fernflowerLibraries(type: CreateFernflowerLibraries, dependsOn: [filter]) {
+        libraries = configurations.libraries
+        dest = file(PATH_CACHED_VERSION_SIDE + 'fernflower.libs.txt')
+    }
+
+    // Normal workflow tasks
+    task decompile(type: FernflowerTask) {
+        config FERNFLOWER, configurations.fernflower
+        libraries = fernflowerLibraries.dest
+        input = filter.slim
+        log = file(PATH_CACHED_VERSION_SIDE + 'decompile.log')
+        dest = file(PATH_CACHED_VERSION_SIDE + 'decompile.jar')
+    }
+
+    def slimsrc
+    if (project.name == 'client') {
+        rootProject.deduplicateSources.clientIn = decompile.dest
+        slimsrc = rootProject.deduplicateSources.clientOut = file(PATH_CACHED_VERSION_SIDE + 'decompile.slim.jar')
+    } else if (project.name == 'joined') {
+        rootProject.deduplicateSources.joinedIn = decompile.dest
+        slimsrc = rootProject.deduplicateSources.joinedOut = file(PATH_CACHED_VERSION_SIDE + 'decompile.slim.jar')
+    } else if (project.name == 'server') {
+        rootProject.deduplicateSources.serverIn = decompile.dest
+        slimsrc = rootProject.deduplicateSources.serverOut = file(PATH_CACHED_VERSION_SIDE + 'decompile.slim.jar')
+    }
+    
+    task applyPatches(type: ApplyPatches) {
+        baseZip = slimsrc
+        output = file('src/main/java')
+        patches = rootProject.file('patches/' + project.name)
+    }
+
+    task makePatches(type: MakePatches) {
+        mustRunAfter applyPatches
+        baseZip = slimsrc
+        modified = file('src/main/java')
+        patches = rootProject.file('patches/' + project.name)
+    }
+}
+
+/*
+task testDecompile
+task testCompile
+task testJdks(dependsOn:[testDecompile, testCompile])*/
+
+/*
+task projectSharedReset(type: Copy, dependsOn: [deduplicateSources, projectRoot]) {
+    from zipTree(deduplicateSources.duplicates)
+    into project.file('projects/shared')
+}
+
+sides.each{ side, child ->
+    def project_dir = project.file("projects/${side}")
+    def patches_dir = project.file("patches/${side}")
+    
+    child.delete = task "project${child.Name}Delete"(type: Delete) {
+        delete project_dir
+    }
+    projectDeleteAll.dependsOn(child.delete)
+    
+    child.project = task "project${child.Name}"(type: CreateProjectTemplate, dependsOn: [projectRoot, child.extra, child.decompile, child.pkgs] +
+            (child.jsonlibs ? [versionJsonTask, extractNatives] : []) +
+            (child.assets ? [createAssetsDataJar] : []) +
+            (child.bundle != null ? [child.bundle] : [])
+    ) {
+        mustRunAfter child.delete
+        dest = project_dir
+        distro = side
+        template = rootProject.file('templates/build.gradle')
+        if (child.jsonlibs)
+            meta = versionJson
+        if (child.bundle != null)
+            bundle = child.bundle.dest
+        CONFIG?.libraries?.get(side)?.each { library "'${it}'" }
+        version = project.name
+        libraryFile child.extra.extra.get().getAsFile()
+        if (child.assets) {
+            libraryFile createAssetsDataJar.archiveFile.get().asFile
+            assetJsonFile = downloadAssets.assetJson
+        }
+        replace '{java_target}', JAVA_TARGET + ''
+        replaceFile '{inject}', PATH_INJECT
+        replaceFile '{natives}', child.jsonlibs ? extractNatives.dest : null
+        replaceFile '{merged_src}', project.file('projects/shared')
+    }
+    projectAll.dependsOn(child.project)
+
+    child.resetPkgs = task "project${child.Name}ResetPackages"(type: Copy, dependsOn: [child.pkgs, child.project]) {
+        from zipTree(child.pkgs.dest)
+        into new File(project_dir, 'src/pkginfo/java')
+    }
+
+    child.reset = task "project${child.Name}Reset"(type: Copy, dependsOn: [child.resetPkgs, child.project, child.decompile, projectSharedReset]) {
+        mustRunAfter child.project
+        from zipTree(child.slimsrc)
+        into new File(project_dir, 'src/main/java')
+    }
+    projectResetAll.dependsOn(child.reset)
+    
+    child.makePatchesDir = task "project${child.Name}MakePatchesDir"(type: MakeDir) {
+        folder = patches_dir
+    }
+
+    projectMakeAll.dependsOn child.makePatches
+    
+    // Tests
+    def testDecompileSide = task("testDecompile${child.Name}")
+    testDecompile.dependsOn(testDecompileSide)
+    def testCompileSide = task("testCompile${child.Name}")
+    testCompile.dependsOn(testCompileSide)
+    
+    def jdks = [
+        [name: 'hotspot8',   Name: 'HotSpot8',   version: 8],
+        [name: 'hotspot11',  Name: 'HotSpot11',  version: 11],
+        [name: 'hotspot15',  Name: 'HotSpot15',  version: 15],
+        [name: 'hotspot16',  Name: 'HotSpot16',  version: 16],
+        [name: 'hotspot17',  Name: 'HotSpot17',  version: 17],
+        [name: 'hotspot18',  Name: 'HotSpot18',  version: 18],
+        [name: 'hotspot19',  Name: 'HotSpot19',  version: 19],
+        [name: 'hotspot20',  Name: 'HotSpot20',  version: 20],
+        [name: 'hotspot21',  Name: 'HotSpot21',  version: 21],
+        [name: 'hotspot22',  Name: 'HotSpot22',  version: 22],
+        [name: 'hotspot23',  Name: 'HotSpot23',  version: 23],
+        [name: 'hotspot24',  Name: 'HotSpot24',  version: 24],
+        [name: 'hotspot25',  Name: 'HotSpot25',  version: 25]
+    ]
+    jdks.findAll{ it.version >= JAVA_TARGET }.each{ jdk ->
+        def testPath = project.file(PATH_CACHED_VERSION + 'test/' + side + '-' + jdk.name + '/')
+        
+        def tstDecompile = task "testDecompile${child.Name}${jdk.Name}"(type: FernflowerTask, dependsOn: [child.libraries]) {
+            config FERNFLOWER, configurations.fernflower
+            javaLauncher = javaToolchains.launcherFor {
+                languageVersion = JavaLanguageVersion.of(jdk.version)
+            }
+            libraries = child.libraries.dest
+            input = child.predecompile
+            log = new File(testPath, side + '.decompile.log')
+            dest = new File(testPath, side + '.decompile.jar')
+            
+        }
+        def tstDecompileCheck = task "testDecompile${child.Name}${jdk.Name}Compare"(type: CompareJars, dependsOn: [tstDecompile, child.decompile]) {
+            expected = child.decompile.dest
+            actual = tstDecompile.dest
+        }
+        testDecompileSide.dependsOn(tstDecompileCheck)
+        
+        def tstCompileClean = task "testCompile${child.Name}${jdk.Name}Clean"(type: Delete) {
+            delete new File(testPath, 'classes')
+        }
+        
+        def sourceDir = child.apply.output
+        def sharedDir = projectSharedApplyPatches.output
+        
+        def tstCompile = task "testCompile${child.Name}${jdk.Name}"(type: JavaCompile, dependsOn: [child.apply, tstCompileClean] + (jdk.official ? [child.renameSources] : [])) {
+            javaCompiler = javaToolchains.compilerFor {
+                languageVersion = JavaLanguageVersion.of(jdk.version)
+            }
+            source = project.files(sourceDir)
+            if (sharedDir != null)
+                source += project.files(sharedDir)
+            destinationDirectory = new File(testPath, 'classes')
+            options.warnings = false
+            options.encoding = ENCODING
+            options.forkOptions.jvmArgs += '-Xmx1g'
+            sourceCompatibility = targetCompatibility = JAVA_TARGET <= 8 ? '1.' + JAVA_TARGET : JAVA_TARGET.toString()
+            // JavaCompile task type requires classpath to be specified before the task begins execution
+            // but the data isn't generated yet, so instead - inject the classpath as the first thing done when it begins
+            classpath = files()
+            classpath.from child.libraries.dest.map { java.nio.file.Files.readAllLines(it.getAsFile().toPath()).collect { new File(it.substring(3)) }} // skip "-e="
+            getOptions().setFork(true)
+        }
+        testCompileSide.dependsOn(tstCompile)
+    }
+}
+
+task generateConfiguration(type: SingleFileOutput) {
+    inputs.property('config', CONFIG)
+    inputs.property('version', version)
+    inputs.property('fernflower', FERNFLOWER)
+    inputs.property('mergetool', MERGETOOL)
+    inputs.property('bundle_extract_jar', BUNDLE_EXTRACT_JAR)
+    inputs.property('java_target', JAVA_TARGET)
+    inputs.property('encoding', ENCODING)
+    dest = file(PATH_CACHED_VERSION_DATA + 'config.json')
+
+    doLast {
+        def json = new groovy.json.JsonBuilder()
+        def config = inputs.properties.config
+
+        def steps_def = [
+            joined: [
+                [type: 'downloadManifest'],
+                [type: 'downloadJson'],
+                [type: 'downloadClient', json: '{downloadJsonOutput}'],
+                [type: 'downloadServer', json: '{downloadJsonOutput}'],
+                [type: 'merge', client: '{downloadClientOutput}', server: '{downloadServerOutput}'],
+                [type: 'strip', input: '{mergeOutput}'],
+                [type: 'listLibraries'],
+                [type: 'decompile', libraries: '{listLibrariesOutput}', input: '{stripOutput}'],
+                [type: 'inject', input: '{decompileOutput}'],
+                [type: 'patch', input: '{injectOutput}']
+            ],
+            client: [
+                [type: 'downloadManifest'],
+                [type: 'downloadJson'],
+                [type: 'downloadClient', json: '{downloadJsonOutput}'],
+                [type: 'strip', input: '{downloadClientOutput}'],
+                [type: 'listLibraries'],
+                [type: 'decompile', libraries: '{listLibrariesOutput}', input: '{stripOutput}'],
+                [type: 'inject', input: '{decompileOutput}'],
+                [type: 'patch', input: '{injectOutput}']
+            ],
+            server: [
+                [type: 'downloadManifest'],
+                [type: 'downloadJson'],
+                [type: 'downloadServer', json: '{downloadJsonOutput}'],
+                [type: 'bundleExtractJar', name: 'extractServer', input: '{downloadServerOutput}'],
+                [type: 'strip', input: '{extractServerOutput}'],
+                [type: 'listLibraries', bundle: '{downloadServerOutput}'],
+                [type: 'decompile', libraries: '{listLibrariesOutput}', input: '{stripOutput}'],
+                [type: 'inject', input: '{decompileOutput}'],
+                [type: 'patch', input: '{injectOutput}']
+            ]
+        ]
+        def functions_def = [
+            decompile: inputs.properties.fernflower.findAll {it.key != 'path'},
+            merge:     inputs.properties.mergetool.findAll {it.key != 'path'},
+            bundleExtractJar: inputs.properties.bundle_extract_jar.findAll {it.key != 'path'}
+        ]
+        def specVer = 5
+        
+        if (config.containsKey('version_zip')) {
+            for (def side : steps_def.values()) {
+                side.removeAll { 'downloadManifest'.equals(it.type) }
+                side.find { 'downloadJson'.equals(it.type) }['version_zip'] = config.version_zip
+            }
+        }
+        
+        json {
+            spec specVer
+            version inputs.properties.version
+            official config.official
+            java_target inputs.properties.java_target
+            encoding inputs.properties.encoding
+            data {
+                inject 'config/inject/'
+                patches {
+                    client 'patches/client/'
+                    joined 'patches/joined/'
+                    server 'patches/server/'
+                }
+            }
+            steps steps_def
+            functions functions_def
+            libraries config.libraries
+        }
+
+        dest.get().getAsFile().text = groovy.json.JsonOutput.prettyPrint(json.toString())
+    }
+}
+
+def makeZip = tasks.register('makeZip', Zip) {
+    dependsOn generateConfiguration
+    archiveBaseName = rootProject.name
+    archiveVersion = project.version
+    destinationDirectory = file(PATH_BUILD + '/distributions')
+
+    from generateConfiguration
+
+    def patches = file('patches')
+    if (patches.exists()) {
+        def shared = file('patches/shared')
+        for (def side : ['client', 'server', 'joined']) {
+            from(file('patches/' + side)) {
+                into 'patches/' + side
+            }
+            from(shared) {
+                into 'patches/' + side
+            }
+        }
+    }
+
+    if (PATH_INJECT != null && PATH_INJECT.exists()) {
+        from(PATH_INJECT) {
+            into 'config/inject/'
+        }
+    }
+}
+
+// This uses advzip: https://linux.die.net/man/1/advzip
+def optimizeZip = tasks.register('optimizeZip', Exec) {
+    dependsOn makeZip
+    description = "Optimizes the NeoForm ZIP-file in-place"
+    commandLine "advzip", "--recompress", "-k", "-4"
+    argumentProviders.add(
+            objects.newInstance(ZipPathArgumentProvider).tap {
+                file = makeZip.flatMap(AbstractArchiveTask::getArchiveFile)
+            }
+    )
+}
+if (optimize_zip.toBoolean()) {
+    makeZip.configure { finalizedBy optimizeZip }
+}
+
+def componentMaker = objects.newInstance(ComponentMaker)
+def neoformComponent = componentMaker.componentFactory.adhoc('neoform')
+components.add(neoformComponent)
+def mappingFormatAttr = Attribute.of('net.neoforged.symbol-mappings-format', String)
+
+configurations {
+    neoformData {
+        canBeResolved = false
+        attributes {
+            attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, JAVA_TARGET)
+        }
+        outgoing {
+            capability "net.neoforged:neoform:${project.version + '-' + rootProject.TIMESTAMP}"
+        }
+        neoformComponent.addVariantsFromConfiguration(it) {}
+    }
+    neoformLibraries {
+        canBeResolved = false
+    }
+    neoformRuntimeElements {
+        canBeResolved = false
+        attributes {
+            attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, JAVA_TARGET)
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+        }
+        outgoing {
+            capability "net.neoforged:neoform-dependencies:${project.version + '-' + rootProject.TIMESTAMP}"
+        }
+        neoformComponent.addVariantsFromConfiguration(it) {}
+        extendsFrom neoformLibraries
+    }
+    neoformApiElements {
+        canBeResolved = false
+        attributes {
+            attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, JAVA_TARGET)
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_API))
+        }
+        outgoing {
+            capability "net.neoforged:neoform-dependencies:${project.version + '-' + rootProject.TIMESTAMP}"
+        }
+        neoformComponent.addVariantsFromConfiguration(it) {}
+        extendsFrom neoformLibraries
+    }
+    parameterMappings {
+        canBeResolved = false
+        attributes {
+            attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category, 'data'))
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, 'symbol-mappings'))
+            attribute(mappingFormatAttr, 'tsrg2-lzma')
+        }
+        outgoing {
+            capability "net.neoforged:neoform-parameter-mappings:${project.version + '-' + rootProject.TIMESTAMP}"
+        }
+        neoformComponent.addVariantsFromConfiguration(it) {}
+    }
+}
+
+artifacts {
+    neoformData makeZip
+}
+
+TOOLS.each {
+    dependencies.add('neoformData', it.version) { transitive = false }
+}
+
+['server', 'client', 'joined'].each {
+    CONFIG?.libraries?.get(it)?.each { dependencies.add('neoformApiElements', it) { transitive = false } }
+}
+
+dependencies {
+    neoformLibraries("net.neoforged:minecraft-dependencies:${project.version}") {
+        endorseStrictVersions()
+    }
+}
+
+publishing {
+    publications {
+        timed(MavenPublication) {
+            artifactId = rootProject.name
+            version = project.version + '-' + rootProject.TIMESTAMP
+            from components.neoform
+            pom {
+                name = 'NeoForm'
+                description = 'Configuration files used for deobfuscating and modding Minecraft.'
+                url = 'https://github.com/NeoForged/NeoForm'
+                scm {
+                    url = 'https://github.com/NeoForged/NeoForm'
+                    connection = 'scm:git:git://github.com/NeoForged/NeoForm.git'
+                    developerConnection = 'scm:git:git@github.com:NeoForged/NeoForm.git'
+                }
+                issueManagement {
+                    system = 'github'
+                    url = 'https://github.com/NeoForged/NeoForm/issues'
+                }
+
+                licenses {
+                    license {
+                        name = 'All Rights Reserved, No redistribution.'
+                        url = ''
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            if (rootProject.hasProperty('MAVEN_USER') && rootProject.hasProperty('MAVEN_PASSWORD') && rootProject.hasProperty('MAVEN_URL')) {
+                url = rootProject.getProperty('MAVEN_URL')
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = rootProject.getProperty('MAVEN_USER') ?: 'not'
+                    password = rootProject.getProperty('MAVEN_PASSWORD') ?: 'set'
+                }
+            } else {
+                url = rootProject.file('repo').getAbsoluteFile().toURI().toString()
+            }
+        }
+    }
+}*/
 

@@ -4,13 +4,14 @@ import org.gradle.api.*
 import org.gradle.api.file.*
 import org.gradle.api.provider.*
 import org.gradle.api.tasks.*
+import org.gradle.api.artifacts.*
 import de.undercouch.gradle.tasks.download.DownloadAction
 import de.undercouch.gradle.tasks.download.DownloadDetails
 
 public abstract class DownloadLibraries extends DefaultTask {
     @InputFile abstract RegularFileProperty getJson()
     @Input abstract MapProperty<String, Object> getConfig()
-    @OutputDirectory abstract RegularFileProperty getDest()
+    @Input Configuration configuration
     @Internal DownloadAction action
 
     DownloadLibraries() {
@@ -22,7 +23,8 @@ public abstract class DownloadLibraries extends DefaultTask {
     @TaskAction
     def exec() {
         Utils.init()
-        def files = [:]
+        println configuration.dependencies
+        /*def files = [:]
         def mavenPaths = [] as Set
         action.dest dest.get().getAsFile()
         action.eachFile(new Action<DownloadDetails>() {
@@ -51,7 +53,7 @@ public abstract class DownloadLibraries extends DefaultTask {
                 }
             }
         }
-        action.execute()
+        action.execute()*/
     }
     
     def download(def url, def target) {
