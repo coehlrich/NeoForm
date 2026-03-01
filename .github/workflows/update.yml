@@ -92,7 +92,7 @@ jobs:
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
         env:
-          COMMIT_MESSAGE: ${{ format('{0}{1}', case(steps.update-patches.outcome == 'failure', 'Start update', 'Update'), case(inputs.new_version, format(' to {0}', inputs.new_version), inputs.update_tools, ' Tools', '') }}
+          COMMIT_MESSAGE: ${{ format('{0}{1}', case(steps.update-patches.outcome == 'failure', 'Start update', 'Update'), case(inputs.new_version, format(' to {0}', inputs.new_version), inputs.update_tools, ' Tools', '')) }}
       - name: Push Changes
         if: steps.commit-changes.outputs.changed
         run: git push -u origin HEAD
