@@ -320,7 +320,7 @@ public abstract class NeoFormWorkspacePlugin implements Plugin<Project> {
         rootPlugin.getNeoformData().configure(configuration -> configuration.getDependencies().addAllLater(neoFormTools.map(Configuration::getAllDependencies)));
         rootPlugin.getNeoformRuntimeElements().configure(configuration -> configuration.getDependencies().addAllLater(neoFormLibraries.map(Configuration::getAllDependencies)));
         rootPlugin.getNeoformApiElements().configure(configuration -> configuration.getDependencies().addAllLater(neoFormLibraries.map(Configuration::getAllDependencies)));
-        project.getRootProject().getTasks().named(LifecycleBasePlugin.CHECK_TASK_NAME).configure(task -> tasks.named("check"));
+        project.getRootProject().getTasks().named(LifecycleBasePlugin.CHECK_TASK_NAME).configure(task -> task.dependsOn(tasks.named("check")));
     }
 
     private void configureEclipseTestTask(Project project,
