@@ -40,6 +40,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
+            const querystring = require('node:querystring')
             const currentVersion = process.env.CURRENT_VERSION;
             const latestVersion = process.env.LATEST_VERSION;
             const releaseType = process.env.RELEASE_TYPE;
