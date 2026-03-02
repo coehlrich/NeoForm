@@ -29,7 +29,11 @@ jobs:
           cache-read-only: false
 
       - name: Setup
-        run: ./gradlew :createPatchWorkspace
+        env:
+          WORKFLOW: ${{ github.workflow }}
+        run: |
+          echo $WORKFLOW
+          ./gradlew :createPatchWorkspace
 
       - name: Test
         run: ./gradlew :check
