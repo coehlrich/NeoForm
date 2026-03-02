@@ -10,6 +10,7 @@ import net.neoforged.neoform.dsl.ToolSettings;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
@@ -48,7 +49,7 @@ public abstract class CreateConfig extends DefaultTask {
     public abstract Property<ToolSettings> getDecompiler();
 
     @Input
-    public abstract MapProperty<String, NeoFormSideExtension> getSides();
+    public abstract MapProperty<String, Side> getSides();
 
     @TaskAction
     public void createConfig() throws IOException {
@@ -58,8 +59,8 @@ public abstract class CreateConfig extends DefaultTask {
         JsonObject librariesRoot = new JsonObject();
         JsonObject stepsRoot = new JsonObject();
         JsonObject patches = new JsonObject();
-        for (Map.Entry<String, NeoFormSideExtension> sideEntry : getSides().get().entrySet()) {
-            NeoFormSideExtension side = sideEntry.getValue();
+        for (Map.Entry<String, Side> sideEntry : getSides().get().entrySet()) {
+            Side side = sideEntry.getValue();
             String name = sideEntry.getKey();
             if (side.getPreProcessJar() != null) {
                 functionsDef.add(name + "PreProcessJar", createFunction(side.getPreProcessJar()));
@@ -174,5 +175,29 @@ public abstract class CreateConfig extends DefaultTask {
             function.addProperty("java_version", settings.getJavaVersion().get());
         }
         return function;
+    }
+
+    public void addSide(String name, NeoFormSideExtension sideExtension) {
+        Side side = getProject().getObjects().newInstance(Side.class);
+        side.getAdditionalCompileDependencies().set(sideExtension.getAdditionalCompileDependencies());
+        side.getAdditionalRuntimeDependencies().set(sideExtension.getAdditionalRuntimeDependencies());
+        side.setPreProcessJar(sideExtension.getPreProcessJar());
+        side.getUseClient().set(sideExtension.getUseClient());
+        side.getUseServer().set(sideExtension.getUseServer());
+        getSides().put(name, side);
+    }
+
+    public static abstract class Side {
+        public abstract ListProperty<String> getAdditionalCompileDependencies();
+
+        public abstract ListProperty<String> getAdditionalRuntimeDependencies();
+
+        public abstract ToolSettings getPreProcessJar();
+
+        public abstract void setPreProcessJar(ToolSettings preProcessJar);
+
+        public abstract Property<Boolean> getUseClient();
+
+        public abstract Property<Boolean> getUseServer();
     }
 }

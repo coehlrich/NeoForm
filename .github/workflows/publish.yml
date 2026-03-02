@@ -57,8 +57,11 @@ jobs:
           description: "Version: ${{ steps.get-version.outputs.version }}"
           target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
+      - name: Setup
+        run: ./gradlew :createPatchWorkspace
+      
       - name: Tests
-        run: ./gradlew check
+        run: ./gradlew :check
 
       - name: Tag Release
         if: ${{ inputs.release }}

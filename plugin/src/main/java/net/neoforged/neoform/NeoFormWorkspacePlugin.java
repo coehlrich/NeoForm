@@ -214,6 +214,7 @@ public abstract class NeoFormWorkspacePlugin implements Plugin<Project> {
             task.getPatchesDir().set(patches);
             task.getSourcesZip().set(deduplicated);
             task.getModifiedSources().set(sources);
+            task.mustRunAfter(createPatchWorkspace);
         });
 
         project.afterEvaluate(tmp -> {
@@ -272,7 +273,8 @@ public abstract class NeoFormWorkspacePlugin implements Plugin<Project> {
         }
         configureEclipseTestTask(project, neoForm, dataZip, neoFormLibrariesClasspath.get(), minecraftLibrariesClasspath.get(), nfrtConfigurer, side);
 
-        rootPlugin.getCreateConfig().configure(task -> task.getSides().put(sideName, side));
+        project.getRootProject().getTasks().named(LifecycleBasePlugin.CHECK_TASK_NAME).configure(task -> task.dependsOn(tasks.named("check")));
+        rootPlugin.getCreateConfig().configure(task -> task.addSide(sideName, side));
         rootPlugin.getUpdateTools().configure(task -> task.addSubProject(project));
         project.afterEvaluate(tmp -> {
             if (side.getUseClient().get()) {
@@ -320,7 +322,6 @@ public abstract class NeoFormWorkspacePlugin implements Plugin<Project> {
         rootPlugin.getNeoformData().configure(configuration -> configuration.getDependencies().addAllLater(neoFormTools.map(Configuration::getAllDependencies)));
         rootPlugin.getNeoformRuntimeElements().configure(configuration -> configuration.getDependencies().addAllLater(neoFormLibraries.map(Configuration::getAllDependencies)));
         rootPlugin.getNeoformApiElements().configure(configuration -> configuration.getDependencies().addAllLater(neoFormLibraries.map(Configuration::getAllDependencies)));
-        project.getRootProject().getTasks().named(LifecycleBasePlugin.CHECK_TASK_NAME).configure(task -> task.dependsOn(tasks.named("check")));
     }
 
     private void configureEclipseTestTask(Project project,

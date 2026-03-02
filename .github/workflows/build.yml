@@ -9,6 +9,7 @@ on:
       - reopened
   push:
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   build:
@@ -26,6 +27,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: false
+
+      - name: Setup
+        run: ./gradlew :createPatchWorkspace
 
       - name: Test
         run: ./gradlew :check
