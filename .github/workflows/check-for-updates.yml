@@ -29,7 +29,7 @@ jobs:
           echo "release_type=$(jq -r 'if .type == "release" then "release" elif .id | test("^\\d+\\.\\d+(\\.\\d+)?-(snapshot|pre|rc)-\\d+$") then "snapshot" else "special" end' <<< $LATEST_SNAPSHOT)" >> $GITHUB_OUTPUT
           echo "latest_version=$(jq -r .id <<< $LATEST_SNAPSHOT)" >> $GITHUB_OUTPUT
           # https://stackoverflow.com/questions/35475432/read-versionname-from-build-gradle-in-bash
-          echo "current_version=$(grep "minecraftVersion" settings.gradle | awk '{print $3}' | tr -d "\'")" >> $GITHUB_OUTPUT
+          echo "current_version=$(grep "minecraftVersion" settings.gradle | awk '{print $3}' | tr -d "\'\r")" >> $GITHUB_OUTPUT
       - id: postprocess
         name: Post-Process Update Variables
         uses: actions/github-script@v8
@@ -40,7 +40,6 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const querystring = require('node:querystring')
             const currentVersion = process.env.CURRENT_VERSION;
             const latestVersion = process.env.LATEST_VERSION;
             const releaseType = process.env.RELEASE_TYPE;
@@ -49,8 +48,6 @@ jobs:
               console.log('No new version has been released.');
               return;
             }
-            console.log(querystring.encode({ currentVersion }));
-            console.log(querystring.encode({ latestVersion }));
             
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `new_version=${latestVersion}\n`, 'utf8');
             
