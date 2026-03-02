@@ -39,23 +39,23 @@ jobs:
         id: get-version
         run: ./gradlew :getVersion
 
-      - uses: neoforged/action-webhooks@v1
-        name: Send Discord start notification
-        with:
-          webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
-          status: 'started'
-          version: ${{ steps.get-version.outputs.version }}
-          include_commit_message: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: neoforged/action-github-status@v1
-        name: Set pending status
-        with:
-          authToken: ${{ secrets.GITHUB_TOKEN }}
-          context: 'Publishing'
-          state: 'pending'
-          description: "Version: ${{ steps.get-version.outputs.version }}"
-          target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+#      - uses: neoforged/action-webhooks@v1
+#        name: Send Discord start notification
+#        with:
+#          webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
+#          status: 'started'
+#          version: ${{ steps.get-version.outputs.version }}
+#          include_commit_message: true
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#      - uses: neoforged/action-github-status@v1
+#        name: Set pending status
+#        with:
+#          authToken: ${{ secrets.GITHUB_TOKEN }}
+#          context: 'Publishing'
+#          state: 'pending'
+#          description: "Version: ${{ steps.get-version.outputs.version }}"
+#          target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   check:
     uses: ./.github/workflows/build.yml
   publish:
@@ -88,11 +88,11 @@ jobs:
           VERSION: ${{ needs.setup.outputs.version }}
           TAG_NAME: v${{ needs.setup.outputs.version }}
 
-      - name: Publish
-        run: ./gradlew publish
-        env:
-          MAVEN_USER: ${{ secrets.MAVEN_USER }}
-          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+#      - name: Publish
+#        run: ./gradlew publish
+#        env:
+#          MAVEN_USER: ${{ secrets.MAVEN_USER }}
+#          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
 
   notify-build-end:
     name: Build notifications (end)
@@ -100,20 +100,21 @@ jobs:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
-      - uses: neoforged/action-webhooks@v1
-        name: Send Discord end notification
-        with:
-          webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
-          status: ${{ needs.publish.result }}
-          version: ${{ needs.setup.outputs.version }}
-          include_commit_message: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: neoforged/action-github-status@v1
-        name: Set build status
-        with:
-          authToken: ${{ secrets.GITHUB_TOKEN }}
-          context: 'Publishing'
-          state: ${{ needs.publish.result }}
-          description: "Version: ${{ needs.setup.outputs.version }}"
-          target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+       - run: echo "Empty"
+#      - uses: neoforged/action-webhooks@v1
+#        name: Send Discord end notification
+#        with:
+#          webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
+#          status: ${{ needs.publish.result }}
+#          version: ${{ needs.setup.outputs.version }}
+#          include_commit_message: true
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#      - uses: neoforged/action-github-status@v1
+#        name: Set build status
+#        with:
+#          authToken: ${{ secrets.GITHUB_TOKEN }}
+#          context: 'Publishing'
+#          state: ${{ needs.publish.result }}
+#          description: "Version: ${{ needs.setup.outputs.version }}"
+#          target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
