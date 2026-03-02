@@ -48,6 +48,8 @@ jobs:
               console.log('No new version has been released.');
               return;
             }
+            console.log(currentVersion);
+            console.log(latestVersion);
             
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `new_version=${latestVersion}\n`, 'utf8');
             
