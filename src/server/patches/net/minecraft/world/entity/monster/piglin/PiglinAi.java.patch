@@ -27,22 +27,20 @@
                  StopAttackingIfTargetInvalid.create((level, target) -> !isNearestValidAttackTarget(level, body, target)),
                  BehaviorBuilder.triggerIf(PiglinAi::hasCrossbow, BackUpIfTooClose.create(5, 0.75F)),
                  SetWalkTargetFromAttackTargetIfTargetOutOfReach.create(1.0F),
-@@ -192,15 +_,15 @@
-         return ActivityData.create(
+@@ -189,7 +_,7 @@
+     }
+ 
+     private static ActivityData<Piglin> initCelebrateActivity() {
+-        return ActivityData.create(
++        return ActivityData.<Piglin>create(
              Activity.CELEBRATE,
              10,
--            ImmutableList.of(
-+            ImmutableList.<net.minecraft.world.entity.ai.behavior.BehaviorControl<? super Piglin>>of(
-                 avoidRepellent(),
-                 SetEntityLookTarget.create(PiglinAi::isPlayerHoldingLovedItem, 14.0F),
-                 StartAttacking.<Piglin>create((level, piglin) -> piglin.isAdult(), PiglinAi::findNearestValidAttackTarget),
--                BehaviorBuilder.triggerIf(
-+                BehaviorBuilder.<Piglin>triggerIf(
-                     body -> body instanceof Piglin && !body.isDancing(), GoToTargetLocation.create(MemoryModuleType.CELEBRATE_LOCATION, 2, 1.0F)
+             ImmutableList.of(
+@@ -200,7 +_,7 @@
+                     body -> body instanceof Piglin piglin && !piglin.isDancing(), GoToTargetLocation.create(MemoryModuleType.CELEBRATE_LOCATION, 2, 1.0F)
                  ),
--                BehaviorBuilder.triggerIf(Piglin::isDancing, GoToTargetLocation.create(MemoryModuleType.CELEBRATE_LOCATION, 4, 0.6F)),
+                 BehaviorBuilder.triggerIf(Piglin::isDancing, GoToTargetLocation.create(MemoryModuleType.CELEBRATE_LOCATION, 4, 0.6F)),
 -                new RunOne<LivingEntity>(
-+                BehaviorBuilder.<Piglin>triggerIf(Piglin::isDancing, GoToTargetLocation.create(MemoryModuleType.CELEBRATE_LOCATION, 4, 0.6F)),
 +                new RunOne<Piglin>(
                      ImmutableList.of(
                          Pair.of(SetEntityLookTarget.create(EntityType.PIGLIN, 8.0F), 1),
