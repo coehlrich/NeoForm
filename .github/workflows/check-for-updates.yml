@@ -67,9 +67,10 @@ jobs:
               const hotfix = parts.length === 3;
               const dropRelease = parts.length === 2 && releaseVersion === latestVersion
               if (isDefaultRef && (hotfix || dropRelease)) {
-                fs.appendFileSync(process.env.GITHUB_OUTPUT, `new_branch=release/${parts[0]}.${parts[1]}\n`, 'utf8');
                 if (hotfix) {
                   fs.appendFileSync(process.env.GITHUB_OUTPUT, `current_branch=release/${parts[0]}.${parts[1]}\n`, 'utf8');
+                } else if (dropRelease) {
+                  fs.appendFileSync(process.env.GITHUB_OUTPUT, `new_branch=release/${parts[0]}.${parts[1]}\n`, 'utf8');
                 }
               }
             }
