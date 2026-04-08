@@ -61,6 +61,17 @@ jobs:
             if (isDefaultRef && releaseType === 'special') {
               console.log('Using new branch for special release found on default branch: %s', releaseType);
               fs.appendFileSync(process.env.GITHUB_OUTPUT, `new_branch=${releaseType}/${latestVersion}\n`, 'utf8');
+            } else if (isDefaultRef && releaseType !== 'special') {
+              const releaseVersion = latestVersion.match(/^\d+.\d+(.\d+)?/)[0];
+              const parts = latestVersion.split(".");
+              const hotfix = parts.length === 3;
+              const dropRelease = parts.length === 2 && releaseVersion === latestVersion
+              if (isDefaultRef && (hotfix || dropRelease)) {
+                fs.appendFileSync(process.env.GITHUB_OUTPUT, `new_branch=release/${parts[0]}.${parts[1]}\n`, 'utf8');
+                if (hotfix) {
+                  fs.appendFileSync(process.env.GITHUB_OUTPUT, `current_branch=release/${parts[0]}.${parts[1]}\n`, 'utf8');
+                }
+              }
             }
 
       - name: Trigger Update Workflow
@@ -68,7 +79,7 @@ jobs:
         uses: actions/github-script@v8
         # We need to use environment variables here to avoid untrusted input injection into the javascript code below.
         env:
-          COMMIT_REF: ${{ github.ref }}
+          COMMIT_REF: ${{ steps.postprocess.outputs.current_branch || github.ref }}
           NEW_VERSION: ${{ steps.postprocess.outputs.new_version }}
           NEW_BRANCH: ${{ steps.postprocess.outputs.new_branch }}
           PUBLISH: ${{ inputs.publish }}
