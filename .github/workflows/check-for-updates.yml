@@ -79,6 +79,7 @@ jobs:
         run: |
           if [[ "$NEW_BRANCH" ]]; then
             if git ls-remote --exit-code --heads origin refs/heads/$NEW_BRANCH; then
+              echo "Version update to $LATEST_VERSION on branch $NEW_BRANCH"
               NEW_VERSION=true
             else
               NEW_VERSION=false
@@ -87,6 +88,7 @@ jobs:
             # https://stackoverflow.com/questions/35475432/read-versionname-from-build-gradle-in-bash
             CURRENT_VERSION=$(grep "minecraftVersion" settings.gradle | awk '{print $3}' | tr -d "\'\r")
             if [[ $CURRENT_VERSION != $LATEST_VERSION ]]; then
+              echo "Version update from $CURRENT_VERSION to $LATEST_VERSION"
               NEW_VERSION=true
             else
               NEW_VERSION=false
