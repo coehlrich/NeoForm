@@ -80,21 +80,16 @@ jobs:
           if [[ "$NEW_BRANCH" ]]; then
             if git ls-remote --exit-code --heads origin refs/heads/$NEW_BRANCH; then
               echo "Version update to $LATEST_VERSION on branch $NEW_BRANCH"
-              NEW_VERSION=true
-            else
-              NEW_VERSION=false
+              echo "new_version=true" >> $GITHUB_OUTPUT
             fi
           else
             # https://stackoverflow.com/questions/35475432/read-versionname-from-build-gradle-in-bash
             CURRENT_VERSION=$(grep "minecraftVersion" settings.gradle | awk '{print $3}' | tr -d "\'\r")
             if [[ $CURRENT_VERSION != $LATEST_VERSION ]]; then
               echo "Version update from $CURRENT_VERSION to $LATEST_VERSION"
-              NEW_VERSION=true
-            else
-              NEW_VERSION=false
+              echo "new_version=true" >> $GITHUB_OUTPUT
             fi
           fi
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
       - name: Trigger Update Workflow
         if: ${{ steps.new_version.outputs.new_version }}
         uses: actions/github-script@v8
@@ -102,7 +97,7 @@ jobs:
         env:
           COMMIT_REF: ${{ steps.branches.outputs.current_branch || github.ref }}
           NEW_BRANCH: ${{ steps.branches.outputs.new_branch }}
-          NEW_VERSION: ${{ steps.check_for_update.outputs.latest_version }}
+          LATEST_VERSION: ${{ steps.check_for_update.outputs.latest_version }}
           PUBLISH: ${{ inputs.publish }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -113,7 +108,7 @@ jobs:
               workflow_id: 'update.yml',
               ref: process.env.COMMIT_REF,
               inputs: {
-                'new_version': process.env.NEW_VERSION,
+                'new_version': process.env.LATEST_VERSION,
                 'new_branch': process.env.NEW_BRANCH,
                 'publish': process.env.PUBLISH,
               }
