@@ -21,35 +21,23 @@ jobs:
     name: Check for new versions
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
       - name: Check for Minecraft Updates
         id: check_for_update
         run: |
           LATEST_SNAPSHOT=$(wget -O - https://piston-meta.mojang.com/mc/game/version_manifest_v2.json | jq -r '.latest.snapshot as $latest_snapshot | .versions[] | select(.id == $latest_snapshot)')
           echo "release_type=$(jq -r 'if .type == "release" then "release" elif .id | test("^\\d+\\.\\d+(\\.\\d+)?-(snapshot|pre|rc)-\\d+$") then "snapshot" else "special" end' <<< $LATEST_SNAPSHOT)" >> $GITHUB_OUTPUT
           echo "latest_version=$(jq -r .id <<< $LATEST_SNAPSHOT)" >> $GITHUB_OUTPUT
-          # https://stackoverflow.com/questions/35475432/read-versionname-from-build-gradle-in-bash
-          echo "current_version=$(grep "minecraftVersion" settings.gradle | awk '{print $3}' | tr -d "\'\r")" >> $GITHUB_OUTPUT
-      - id: postprocess
-        name: Post-Process Update Variables
+      - id: branches
+        name: Determine Branches
         uses: actions/github-script@v8
         env:
           LATEST_VERSION: ${{ steps.check_for_update.outputs.latest_version }}
-          CURRENT_VERSION: ${{ steps.check_for_update.outputs.current_version }}
           RELEASE_TYPE: ${{ steps.check_for_update.outputs.release_type }}
         with:
           script: |
             const fs = require('fs');
-            const currentVersion = process.env.CURRENT_VERSION;
             const latestVersion = process.env.LATEST_VERSION;
             const releaseType = process.env.RELEASE_TYPE;
-            
-            if (currentVersion === latestVersion) {
-              console.log('No new version has been released.');
-              return;
-            }
-            
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `new_version=${latestVersion}\n`, 'utf8');
             
             // if we're on the default branch, create a new branch for special releases
             // otherwise just stay on the same branch.
@@ -58,19 +46,58 @@ jobs:
             console.log('Default ref: %s. Current ref: %s', defaultRef, currentRef); 
             const isDefaultRef = currentRef === defaultRef;
             
+            var outputs = {}
             if (isDefaultRef && releaseType === 'special') {
               console.log('Using new branch for special release found on default branch: %s', releaseType);
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, `new_branch=${releaseType}/${latestVersion}\n`, 'utf8');
+              outputs['new_branch'] = `${releaseType}/${latestVersion}`;
+            } else if (isDefaultRef && releaseType !== 'special') {
+              const releaseVersion = latestVersion.match(/^\d+.\d+(.\d+)?/)[0];
+              const parts = latestVersion.split(".");
+              const hotfix = parts.length === 3;
+              const dropRelease = parts.length === 2 && releaseVersion === latestVersion
+              if (isDefaultRef && (hotfix || dropRelease)) {
+                if (hotfix) {
+                  outputs['current_branch'] = `release/${parts[0]}.${parts[1]}`;
+                } else if (dropRelease) {
+                  outputs['new_branch'] = `release/${parts[0]}.${parts[1]}`;
+                }
+              }
             }
-
+            
+            for (const [key, value] of Object.entries(outputs)) {
+              console.log(`${key}=${value}`);
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, `${key}=${value}\n`, 'utf8');
+            }
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.branches.outputs.current_branch || github.ref }}
+      - id: new_version
+        name: Check if the Version is New
+        env:
+          NEW_BRANCH: ${{ steps.branches.outputs.new_branch }}
+          LATEST_VERSION: ${{ steps.check_for_update.outputs.latest_version }}
+        run: |
+          if [[ "$NEW_BRANCH" ]]; then
+            if git ls-remote --exit-code --heads origin refs/heads/$NEW_BRANCH; then
+              echo "Version update to $LATEST_VERSION on branch $NEW_BRANCH"
+              echo "new_version=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            # https://stackoverflow.com/questions/35475432/read-versionname-from-build-gradle-in-bash
+            CURRENT_VERSION=$(grep "minecraftVersion" settings.gradle | awk '{print $3}' | tr -d "\'\r")
+            if [[ $CURRENT_VERSION != $LATEST_VERSION ]]; then
+              echo "Version update from $CURRENT_VERSION to $LATEST_VERSION"
+              echo "new_version=true" >> $GITHUB_OUTPUT
+            fi
+          fi
       - name: Trigger Update Workflow
-        if: ${{ steps.postprocess.outputs.new_version }}
+        if: ${{ steps.new_version.outputs.new_version }}
         uses: actions/github-script@v8
         # We need to use environment variables here to avoid untrusted input injection into the javascript code below.
         env:
-          COMMIT_REF: ${{ github.ref }}
-          NEW_VERSION: ${{ steps.postprocess.outputs.new_version }}
-          NEW_BRANCH: ${{ steps.postprocess.outputs.new_branch }}
+          COMMIT_REF: ${{ steps.branches.outputs.current_branch || github.ref }}
+          NEW_BRANCH: ${{ steps.branches.outputs.new_branch }}
+          LATEST_VERSION: ${{ steps.check_for_update.outputs.latest_version }}
           PUBLISH: ${{ inputs.publish }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -81,7 +108,7 @@ jobs:
               workflow_id: 'update.yml',
               ref: process.env.COMMIT_REF,
               inputs: {
-                'new_version': process.env.NEW_VERSION,
+                'new_version': process.env.LATEST_VERSION,
                 'new_branch': process.env.NEW_BRANCH,
                 'publish': process.env.PUBLISH,
               }
