@@ -43,7 +43,7 @@
 -                new RunOne<LivingEntity>(
 +                new RunOne<Piglin>(
                      ImmutableList.of(
-                         Pair.of(SetEntityLookTarget.create(EntityType.PIGLIN, 8.0F), 1),
+                         Pair.of(SetEntityLookTarget.create(EntityTypes.PIGLIN, 8.0F), 1),
                          Pair.of(RandomStroll.stroll(0.6F, 2, 1), 1),
 @@ -213,7 +_,7 @@
      }

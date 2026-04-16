@@ -1,6 +1,6 @@
---- a/net/minecraft/advancements/criterion/EntityFlagsPredicate.java
-+++ b/net/minecraft/advancements/criterion/EntityFlagsPredicate.java
-@@ -67,7 +_,7 @@
+--- a/net/minecraft/advancements/predicates/entity/EntityFlagsPredicate.java
++++ b/net/minecraft/advancements/predicates/entity/EntityFlagsPredicate.java
+@@ -70,7 +_,7 @@
          } else {
              return this.isFallFlying.isPresent() && entity instanceof LivingEntity living && living.isFallFlying() != this.isFallFlying.get()
                  ? false
