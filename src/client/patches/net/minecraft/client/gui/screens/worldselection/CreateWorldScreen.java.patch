@@ -9,7 +9,7 @@
                      }
                  });
              } catch (IOException e) {
-@@ -594,7 +_,7 @@
+@@ -589,7 +_,7 @@
                          targetDir = Files.createTempDirectory("mcworld-");
                      } catch (IOException e) {
                          LOGGER.warn("Failed to create temporary dir");
