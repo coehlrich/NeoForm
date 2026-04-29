@@ -36,16 +36,16 @@
              Activity.CELEBRATE,
              10,
              ImmutableList.of(
-@@ -200,7 +_,7 @@
-                     body -> body instanceof Piglin piglin && !piglin.isDancing(), GoToTargetLocation.create(MemoryModuleType.CELEBRATE_LOCATION, 2, 1.0F)
-                 ),
+@@ -198,7 +_,7 @@
+                 StartAttacking.<Piglin>create((level, piglin) -> piglin.isAdult(), PiglinAi::findNearestValidAttackTarget),
+                 BehaviorBuilder.triggerIf(piglin -> !piglin.isDancing(), GoToTargetLocation.create(MemoryModuleType.CELEBRATE_LOCATION, 2, 1.0F)),
                  BehaviorBuilder.triggerIf(Piglin::isDancing, GoToTargetLocation.create(MemoryModuleType.CELEBRATE_LOCATION, 4, 0.6F)),
 -                new RunOne<LivingEntity>(
-+                new RunOne<Piglin>(
++                new RunOne<>(
                      ImmutableList.of(
                          Pair.of(SetEntityLookTarget.create(EntityTypes.PIGLIN, 8.0F), 1),
                          Pair.of(RandomStroll.stroll(0.6F, 2, 1), 1),
-@@ -213,7 +_,7 @@
+@@ -211,7 +_,7 @@
      }
  
      private static ActivityData<Piglin> initAdmireItemActivity() {
@@ -54,7 +54,7 @@
              Activity.ADMIRE_ITEM,
              10,
              ImmutableList.of(
-@@ -226,21 +_,21 @@
+@@ -224,21 +_,21 @@
      }
  
      private static ActivityData<Piglin> initRetreatActivity() {
@@ -79,7 +79,7 @@
              Activity.RIDE,
              10,
              ImmutableList.of(
-@@ -255,7 +_,7 @@
+@@ -253,7 +_,7 @@
                              .build()
                      )
                  ),
