@@ -71,7 +71,7 @@ public abstract class NeoFormProjectPlugin implements Plugin<Project> {
         var inputsDir = buildDir.dir("neoform/inputs/" + neoForm.getMinecraftVersion().get());
         var minecraftVersion = neoForm.getMinecraftVersion();
 
-        project.setGroup("net.neoforged");
+        project.setGroup("io.github.coehlrich");
         TagBasedVersioning.configureVersion(project, minecraftVersion.get());
 
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
