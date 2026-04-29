@@ -32,6 +32,8 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin;
 
 import javax.inject.Inject;
 
+import java.net.URI;
+
 public abstract class NeoFormProjectPlugin implements Plugin<Project> {
 
     private TaskProvider<DownloadVersionArtifacts> downloadVersionArtifacts;
@@ -179,7 +181,14 @@ public abstract class NeoFormProjectPlugin implements Plugin<Project> {
         project.getPlugins().apply("net.neoforged.gradleutils");
         var gradleUtilsExtension = project.getExtensions().getByType(GradleUtilsExtension.class);
         var publishing = project.getExtensions().getByType(PublishingExtension.class);
-        publishing.getRepositories().maven(gradleUtilsExtension.getPublishingMaven());
+        publishing.getRepositories().maven(maven -> {
+            maven.setName("GithubPackages");
+            maven.setUrl(URI.create("https://maven.pkg.github.com/coehlrich/NeoForm"));
+            maven.credentials(credentials -> {
+                credentials.setUsername(System.getenv("GITHUB_ACTOR"));
+                credentials.setPassword(System.getenv("GITHUB_TOKEN"));
+            });
+        });
 
         // Set common POM properties for all published artifacts
         publishing.getPublications().register("maven", MavenPublication.class, publication -> {
@@ -192,9 +201,8 @@ public abstract class NeoFormProjectPlugin implements Plugin<Project> {
         publishing.getPublications().withType(MavenPublication.class).configureEach(it -> {
             var pomUtils = project.getExtensions().getByType(PomUtilsExtension.class);
             it.pom(pom -> {
-                pomUtils.githubRepo(pom, "NeoForm");
+                pomUtils.githubRepo(pom, "NeoForm", "coehlrich");
                 pomUtils.license(pom, PomUtilsExtension.License.LGPL_v2);
-                pomUtils.neoForgedDeveloper(pom);
             });
         });
     }
