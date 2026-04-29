@@ -58,9 +58,6 @@ public class NeoFormSettingsPlugin implements Plugin<Settings> {
                     repo.setUrl(URI.create("https://libraries.minecraft.net/"));
                     repo.metadataSources(sources -> sources.mavenPom());
                 });
-                repositories.maven(repo -> {
-                    repo.setUrl(URI.create("https://prmaven.neoforged.net/VineflowerPlugins/pr1"));
-                });
             });
         });
 
