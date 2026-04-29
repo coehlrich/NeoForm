@@ -146,7 +146,7 @@ public abstract class NeoFormProjectPlugin implements Plugin<Project> {
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
         neoformData = configurations.consumable("neoformData", configuration -> {
             configuration.getAttributes().attributeProvider(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, neoForm.getJavaVersion());
-            configuration.getOutgoing().capability("net.neoforged:neoform:" + project.getVersion());
+            configuration.getOutgoing().capability("io.github.coehlrich:neoform:" + project.getVersion());
         });
         project.getArtifacts().add(neoformData.getName(), createDataZip);
 
@@ -156,7 +156,7 @@ public abstract class NeoFormProjectPlugin implements Plugin<Project> {
                 attributes.attributeProvider(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, neoForm.getJavaVersion());
                 attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.class, Usage.JAVA_RUNTIME));
             });
-            configuration.getOutgoing().capability("net.neoforged:neoform-dependencies:" + project.getVersion());
+            configuration.getOutgoing().capability("io.github.coehlrich:neoform-dependencies:" + project.getVersion());
             configuration.extendsFrom(configurations.named(MinecraftLibraries.DEPENDENCY_SCOPE).get());
         });
         neoformApiElements = configurations.consumable("neoformApiElements", configuration -> {
@@ -164,7 +164,7 @@ public abstract class NeoFormProjectPlugin implements Plugin<Project> {
                 attributes.attributeProvider(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, neoForm.getJavaVersion());
                 attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.class, Usage.JAVA_API));
             });
-            configuration.getOutgoing().capability("net.neoforged:neoform-dependencies:" + project.getVersion());
+            configuration.getOutgoing().capability("io.github.coehlrich:neoform-dependencies:" + project.getVersion());
             configuration.extendsFrom(configurations.named(MinecraftLibraries.DEPENDENCY_SCOPE).get());
         });
 
