@@ -78,7 +78,7 @@ jobs:
           LATEST_VERSION: ${{ steps.check_for_update.outputs.latest_version }}
         run: |
           if [[ "$NEW_BRANCH" ]]; then
-            if git ls-remote --exit-code --heads origin refs/heads/$NEW_BRANCH; then
+            if ! git ls-remote --exit-code --heads origin refs/heads/$NEW_BRANCH; then
               echo "Version update to $LATEST_VERSION on branch $NEW_BRANCH"
               echo "new_version=true" >> $GITHUB_OUTPUT
             fi
