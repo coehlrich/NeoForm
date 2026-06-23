@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/renderer/entity/EntityRenderDispatcher.java
 +++ b/net/minecraft/client/renderer/entity/EntityRenderDispatcher.java
-@@ -92,11 +_,11 @@
+@@ -96,11 +_,11 @@
      }
  
      public <T extends Entity> EntityRenderer<? super T, ?> getRenderer(T entity) {
