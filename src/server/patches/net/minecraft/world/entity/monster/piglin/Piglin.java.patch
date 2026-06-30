@@ -9,7 +9,7 @@
          List.of(
              MemoryModuleType.UNIVERSAL_ANGER,
              MemoryModuleType.ATE_RECENTLY,
-@@ -216,7 +_,7 @@
+@@ -211,7 +_,7 @@
  
      @Override
      public Brain<Piglin> getBrain() {
