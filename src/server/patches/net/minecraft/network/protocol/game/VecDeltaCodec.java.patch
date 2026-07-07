@@ -1,0 +1,46 @@
+--- a/net/minecraft/network/protocol/game/VecDeltaCodec.java
++++ b/net/minecraft/network/protocol/game/VecDeltaCodec.java
+@@ -1,11 +_,14 @@
+ package net.minecraft.network.protocol.game;
+ 
+-import com.google.common.annotations.VisibleForTesting;
+ import java.util.List;
++
++import org.jspecify.annotations.Nullable;
++
++import com.google.common.annotations.VisibleForTesting;
++
+ import net.minecraft.world.entity.PositionPath;
+ import net.minecraft.world.entity.PositionStep;
+ import net.minecraft.world.phys.Vec3;
+-import org.jspecify.annotations.Nullable;
+ 
+ public class VecDeltaCodec {
+     private static final double TRUNCATION_STEPS = 4096.0;
+@@ -43,25 +_,7 @@
+     public @Nullable VecDelta tryEncode(PositionPath position) {
+         return switch (position) {
+             case PositionPath.Linear(Vec3 pos) -> this.tryEncode(pos);
+-            case PositionPath.Stepped var6 -> {
+-                PositionPath.Stepped var10000 = var6;
+-
+-                try {
+-                    var10000.endPosition();
+-                } catch (Throwable var10) {
+-                    throw new MatchException(var10.toString(), var10);
+-                }
+-
+-                var10000 = var6;
+-
+-                try {
+-                    var14 = var10000.steps();
+-                } catch (Throwable var9) {
+-                    throw new MatchException(var9.toString(), var9);
+-                }
+-
+-                List var8 = var14;
+-                List<PositionStep> steps = var8;
++            case PositionPath.Stepped(Vec3 _, List<PositionStep> steps) -> {
+                 yield VecDelta.Stepped.tryEncode(this, steps);
+             }
+             default -> throw new MatchException(null, null);

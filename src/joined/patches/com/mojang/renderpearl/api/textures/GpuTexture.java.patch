@@ -1,5 +1,5 @@
---- a/com/mojang/blaze3d/textures/GpuTexture.java
-+++ b/com/mojang/blaze3d/textures/GpuTexture.java
+--- a/com/mojang/renderpearl/api/textures/GpuTexture.java
++++ b/com/mojang/renderpearl/api/textures/GpuTexture.java
 @@ -68,6 +_,7 @@
  
      @Retention(RetentionPolicy.CLASS)

@@ -1,6 +1,6 @@
 --- a/net/minecraft/client/resources/model/geometry/BakedQuad.java
 +++ b/net/minecraft/client/resources/model/geometry/BakedQuad.java
-@@ -52,6 +_,7 @@
+@@ -53,6 +_,7 @@
  
      @Retention(RetentionPolicy.CLASS)
      @Target(ElementType.TYPE_USE)

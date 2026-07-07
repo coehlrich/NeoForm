@@ -1,5 +1,5 @@
---- a/com/mojang/blaze3d/buffers/GpuBuffer.java
-+++ b/com/mojang/blaze3d/buffers/GpuBuffer.java
+--- a/com/mojang/renderpearl/api/buffers/GpuBuffer.java
++++ b/com/mojang/renderpearl/api/buffers/GpuBuffer.java
 @@ -64,6 +_,7 @@
  
      @Retention(RetentionPolicy.CLASS)
