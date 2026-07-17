@@ -222,9 +222,8 @@ public abstract class NeoFormWorkspacePlugin implements Plugin<Project> {
             if (side.getPatchSource().isPresent()) {
                 TaskProvider<CreatePatches> patchSource = side.getPatchSource().get().getPlugins().findPlugin(NeoFormWorkspacePlugin.class).getCreatePatches();
                 createPatchWorkspace.configure(task -> {
-                    // TODO: May need to fuzzily apply client patches but as of 26.1-snapshot-7 no
-                    // patches are close enough to an OnlyIn annotation
                     task.getPatchesDir().set(patchSource.get().getPatchesDir().get());
+                    task.getFuzzy().set(0.9f);
                     task.mustRunAfter(patchSource);
                 });
                 createPatches.configure(task -> {

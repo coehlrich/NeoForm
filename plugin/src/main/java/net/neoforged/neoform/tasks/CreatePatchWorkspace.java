@@ -51,7 +51,7 @@ public abstract class CreatePatchWorkspace extends DefaultTask {
     public abstract DirectoryProperty getPatchesDir();
 
     @org.gradle.api.tasks.Input
-    public abstract Property<Boolean> getUpdateMode();
+    public abstract Property<Float> getFuzzy();
 
     @OutputDirectory
     public abstract DirectoryProperty getWorkspace();
@@ -61,7 +61,6 @@ public abstract class CreatePatchWorkspace extends DefaultTask {
     @Inject
     public CreatePatchWorkspace(Problems problems) {
         this.reporter = problems.getReporter();
-        this.getUpdateMode().convention(false);
     }
 
     record Patch(Path patchPath, byte[] content) {
@@ -69,13 +68,6 @@ public abstract class CreatePatchWorkspace extends DefaultTask {
 
     @TaskAction
     public void createWorkspace() throws IOException {
-        boolean updateMode = getUpdateMode().get();
-        if (updateMode) {
-            getLogger().lifecycle("************************************************************************");
-            getLogger().lifecycle("RUNNING IN UPDATE MODE");
-            getLogger().lifecycle("************************************************************************");
-        }
-
         var workspace = getWorkspace().getAsFile().get().toPath();
 
         // Set up and clear rejects directory
@@ -147,10 +139,9 @@ public abstract class CreatePatchWorkspace extends DefaultTask {
                                 .level(LogLevel.WARN)
                                 .mode(PatchMode.OFFSET);
 
-                        if (updateMode) {
-                            builder.mode(PatchMode.OFFSET)
-                                    .level(io.codechicken.diffpatch.util.LogLevel.INFO)
-                                    .rejectsOutput(Output.SingleOutput.pipe(rejectsOutput));
+                        if (getFuzzy().isPresent()) {
+                            builder.mode(PatchMode.FUZZY)
+                                    .minFuzz(getFuzzy().get());
                         }
 
                         var result = builder.build().operate();
@@ -163,14 +154,6 @@ public abstract class CreatePatchWorkspace extends DefaultTask {
                                         .severity(Severity.ERROR);
                             }));
                             getLogger().error("Applying the patch to {}} failed.", entry.getName());
-
-                            if (updateMode && rejectsOutput.size() > 0) {
-                                Path rejectsPath = rejectsDir.resolve(entry.getName() + ".patch");
-                                if (dirsCreated.add(rejectsPath.getParent())) {
-                                    Files.createDirectories(rejectsPath.getParent());
-                                }
-                                Files.write(rejectsPath, rejectsOutput.toByteArray());
-                            }
 
                             failedPatches.add(entry.getName());
                         } else {
