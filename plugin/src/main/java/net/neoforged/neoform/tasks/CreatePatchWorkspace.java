@@ -19,6 +19,7 @@ import org.gradle.api.problems.Severity;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
@@ -50,6 +51,7 @@ public abstract class CreatePatchWorkspace extends DefaultTask {
     @InputDirectory
     public abstract DirectoryProperty getPatchesDir();
 
+    @Optional
     @org.gradle.api.tasks.Input
     public abstract Property<Float> getFuzzy();
 
