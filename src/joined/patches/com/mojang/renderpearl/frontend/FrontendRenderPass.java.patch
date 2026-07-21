@@ -1,0 +1,34 @@
+--- a/com/mojang/renderpearl/frontend/FrontendRenderPass.java
++++ b/com/mojang/renderpearl/frontend/FrontendRenderPass.java
+@@ -555,30 +_,10 @@
+                             }
+                             break;
+                         case COMBINED_IMAGE_SAMPLER:
+-                            if (!(value instanceof TextureViewAndSampler var9)) {
++                            if (!(value instanceof TextureViewAndSampler(GpuTextureView textureView, GpuSampler sampler))) {
+                                 throw new IllegalArgumentException("Sampler value must be TextureViewAndSampler");
+                             }
+ 
+-                            TextureViewAndSampler var10000 = var9;
+-
+-                            try {
+-                                var17 = var10000.view();
+-                            } catch (Throwable var12) {
+-                                throw new MatchException(var12.toString(), var12);
+-                            }
+-
+-                            GpuTextureView var10 = var17;
+-                            GpuTextureView textureView = var10;
+-                            var10000 = var9;
+-
+-                            try {
+-                                var19 = var10000.sampler();
+-                            } catch (Throwable var11) {
+-                                throw new MatchException(var11.toString(), var11);
+-                            }
+-
+-                            GpuSampler var16 = var19;
+-                            GpuSampler sampler = var16;
+                             if (textureView.isClosed()) {
+                                 throw new IllegalStateException(
+                                     "Texture view " + uniform.name() + " (" + textureView.texture().getLabel() + ") has been closed!"

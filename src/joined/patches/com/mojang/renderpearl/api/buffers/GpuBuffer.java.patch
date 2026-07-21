@@ -1,6 +1,6 @@
 --- a/com/mojang/renderpearl/api/buffers/GpuBuffer.java
 +++ b/com/mojang/renderpearl/api/buffers/GpuBuffer.java
-@@ -51,6 +_,7 @@
+@@ -49,6 +_,7 @@
  
      @Retention(RetentionPolicy.CLASS)
      @Target(ElementType.TYPE_USE)

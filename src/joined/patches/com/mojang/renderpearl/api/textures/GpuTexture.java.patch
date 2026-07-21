@@ -1,6 +1,6 @@
 --- a/com/mojang/renderpearl/api/textures/GpuTexture.java
 +++ b/com/mojang/renderpearl/api/textures/GpuTexture.java
-@@ -37,6 +_,7 @@
+@@ -35,6 +_,7 @@
  
      @Retention(RetentionPolicy.CLASS)
      @Target(ElementType.TYPE_USE)
