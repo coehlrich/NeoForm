@@ -152,9 +152,9 @@
 +                    case BlendDensity -> !this.blender.isEmpty() ? new BlendDensity(wrapped) : wrapped;
 +                };
 +            case DensityFunctions.HolderHolder(net.minecraft.core.Holder<DensityFunction> holder) -> holder.value();
-+            case SimpleDensityFunction.BLEND_ALPHA -> this.blendAlpha;
-+            case SimpleDensityFunction.BLEND_OFFSET -> this.blendOffset;
-+            case SimpleDensityFunction.BEARDIFIER -> this.beardifier;
++            case SimpleDensityFunction.BLEND_ALPHA -> java.util.Objects.requireNonNullElse(this.blendAlpha, function);
++            case SimpleDensityFunction.BLEND_OFFSET -> java.util.Objects.requireNonNullElse(this.blendOffset, function);
++            case SimpleDensityFunction.BEARDIFIER -> java.util.Objects.requireNonNullElse(this.beardifier, function);
 +            default -> function;
 +        };
      }
