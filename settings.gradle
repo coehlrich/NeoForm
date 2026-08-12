@@ -7,7 +7,7 @@ plugins {
 }
 
 neoForm {
-    minecraftVersion = '26.3-snapshot-7'
+    minecraftVersion = '26.3-snapshot-8'
 
     javaVersion = 25
     testJavaVersions = [] // Additional Java versions to test with
