@@ -1,22 +1,12 @@
 package net.neoforged.neoform;
 
-import net.neoforged.minecraftdependencies.MinecraftDependenciesPlugin;
-import net.neoforged.moddevgradle.internal.NeoDevFacade;
-import net.neoforged.neoform.dsl.NeoFormExtension;
-import net.neoforged.neoform.dsl.NeoFormSideExtension;
-import net.neoforged.neoform.dsl.ToolSettings;
-import net.neoforged.neoform.tasks.CreatePatchWorkspace;
-import net.neoforged.neoform.tasks.CreatePatches;
-import net.neoforged.neoform.tasks.Decompile;
-import net.neoforged.neoform.tasks.DeduplicateSources;
-import net.neoforged.neoform.tasks.DownloadVersionArtifacts;
-import net.neoforged.neoform.tasks.GenerateRunClientClass;
-import net.neoforged.neoform.tasks.PrepareJarForDecompiler;
-import net.neoforged.neoform.tasks.TestWithEclipseCompiler;
-import net.neoforged.neoform.tasks.TestWithNeoFormRuntime;
-import net.neoforged.neoform.tasks.ToolAction;
-import net.neoforged.nfrtgradle.DownloadAssets;
-import net.neoforged.nfrtgradle.NeoFormRuntimeTask;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
+
+import javax.inject.Inject;
+
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
@@ -38,12 +28,23 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.language.base.plugins.LifecycleBasePlugin;
 
-import javax.inject.Inject;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Stream;
+import net.neoforged.minecraftdependencies.MinecraftDependenciesPlugin;
+import net.neoforged.moddevgradle.internal.NeoDevFacade;
+import net.neoforged.neoform.dsl.NeoFormExtension;
+import net.neoforged.neoform.dsl.NeoFormSideExtension;
+import net.neoforged.neoform.dsl.ToolSettings;
+import net.neoforged.neoform.tasks.CreatePatchWorkspace;
+import net.neoforged.neoform.tasks.CreatePatches;
+import net.neoforged.neoform.tasks.Decompile;
+import net.neoforged.neoform.tasks.DeduplicateSources;
+import net.neoforged.neoform.tasks.DownloadVersionArtifacts;
+import net.neoforged.neoform.tasks.GenerateRunClientClass;
+import net.neoforged.neoform.tasks.PrepareJarForDecompiler;
+import net.neoforged.neoform.tasks.TestWithEclipseCompiler;
+import net.neoforged.neoform.tasks.TestWithNeoFormRuntime;
+import net.neoforged.neoform.tasks.ToolAction;
+import net.neoforged.nfrtgradle.DownloadAssets;
+import net.neoforged.nfrtgradle.NeoFormRuntimeTask;
 
 public abstract class NeoFormWorkspacePlugin implements Plugin<Project> {
 
@@ -333,7 +334,7 @@ public abstract class NeoFormWorkspacePlugin implements Plugin<Project> {
             NeoFormSideExtension side) {
 
         var eclipseCompiler = project.getConfigurations().dependencyScope("eclipseCompiler", spec -> {
-            spec.getDependencies().add(project.getDependencyFactory().create("org.eclipse.jdt:ecj:3.45.0"));
+            spec.getDependencies().add(project.getDependencyFactory().create("org.eclipse.jdt:ecj:3.46.100"));
         });
         var eclipseCompilerClasspath = project.getConfigurations().resolvable("eclipseCompilerClasspath", spec -> {
             spec.extendsFrom(eclipseCompiler.get());
