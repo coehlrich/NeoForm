@@ -1,0 +1,20 @@
+--- a/net/minecraft/client/OptionInstance.java
++++ b/net/minecraft/client/OptionInstance.java
+@@ -214,7 +_,7 @@
+         }
+ 
+         static <T> OptionInstance.ButtonFactory<T> textCycleButton(OptionInstance.CycleableValueSet<T> valueSet) {
+-            return (instance, tooltip, options, x, y, width, onValueChanged) -> CycleButton.builder(instance.toString, instance::get)
++            return (instance, tooltip, options, x, y, width, onValueChanged) -> CycleButton.<T>builder(instance.toString, instance::get)
+                 .withValues(valueSet.valueListSupplier())
+                 .withTooltip(tooltip)
+                 .create(x, y, width, 20, instance.caption, (var3x, value) -> {
+@@ -225,7 +_,7 @@
+         }
+ 
+         static <T> OptionInstance.ButtonFactory<T> iconCycleButton(OptionInstance.CycleableValueSet<T> valueSet, Function<T, ScaledWidgetSprites> iconProvider) {
+-            return (instance, tooltip, options, x, y, width, onValueChanged) -> SpriteIconCycleButton.builder(
++            return (instance, tooltip, options, x, y, width, onValueChanged) -> SpriteIconCycleButton.<T>builder(
+                     instance.caption, instance.toString, instance::get
+                 )
+                 .withValues(valueSet.valueListSupplier())
