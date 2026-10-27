@@ -130,7 +130,7 @@
                                          GlTextureView textureViewx = (GlTextureView)renderPass.uniforms.get(i);
                                          if (textureViewx != null) {
                                              this.stateManager._activeTexture(33984 + samplerIndex);
-@@ -664,13 +_,6 @@
+@@ -664,14 +_,8 @@
                                              GL33C.glTexParameteri(3553, 33084, textureViewx.baseMipLevel());
                                              GL33C.glTexParameteri(3553, 33085, textureViewx.baseMipLevel() + textureViewx.mipLevels() - 1);
                                          }
@@ -142,5 +142,7 @@
 -                                default:
 -                                    throw new IllegalArgumentException();
                              }
++                            default -> throw new IllegalArgumentException();
                          }
                      }
+                 }
